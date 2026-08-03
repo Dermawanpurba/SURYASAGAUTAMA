@@ -1,0 +1,2343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSU Contract Management System - PT Surya Saga Utama</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            },
+            sidebar: {
+              bg: '#0f172a',
+              hover: '#1e293b',
+              active: '#2563eb',
+              text: '#94a3b8',
+              textActive: '#ffffff'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- ApexCharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1;
+    }
+    
+    .modal-backdrop {
+      background-color: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+    }
+
+    /* Official Corporate Print & PDF Layout Styles */
+    @media print {
+      body * { visibility: hidden !important; }
+      #print-area, #print-area * { visibility: visible !important; }
+      #print-area {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        padding: 20px !important;
+        background: white !important;
+        color: black !important;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- MAIN APP CONTAINER -->
+  <div id="app" class="flex h-screen overflow-hidden">
+    
+    <!-- LEFT SIDEBAR (9 MODULES - REPORTS REMOVED) -->
+    <aside id="sidebar" class="w-64 bg-sidebar-bg flex flex-col border-r border-slate-800 transition-all duration-300 z-30 shrink-0 select-none">
+      <!-- Logo & Branding -->
+      <div class="h-16 flex items-center justify-between px-4 border-b border-slate-800/80">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-brand-600/30">
+            SSU
+          </div>
+          <div class="brand-text">
+            <h1 class="text-white font-bold text-sm tracking-wide leading-tight">Surya Saga Utama</h1>
+            <p class="text-xs text-slate-400 font-medium">Nickel Ore ERP</p>
+          </div>
+        </div>
+        <button id="toggle-sidebar" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
+          <i data-lucide="chevron-left" class="w-5 h-5 transition-transform duration-300" id="toggle-icon"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1" id="sidebar-menu">
+        <!-- Injected via JavaScript -->
+      </nav>
+
+      <!-- User Role Indicator -->
+      <div class="p-3 border-t border-slate-800/80 bg-slate-900/50">
+        <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-800/60">
+          <div class="w-8 h-8 rounded-full bg-brand-700 text-white flex items-center justify-center font-bold text-xs">
+            BS
+          </div>
+          <div class="brand-text overflow-hidden">
+            <p class="text-xs font-semibold text-white truncate">Budi Santoso</p>
+            <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-400 font-medium">Administrator</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT MAIN WORKSPACE -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50">
+      
+      <!-- TOP HEADER BAR -->
+      <header class="h-16 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+        <div class="flex items-center gap-4">
+          <div>
+            <h2 id="page-title" class="text-xl font-bold text-slate-900 leading-none">Dashboard Overview</h2>
+            <p id="page-subtitle" class="text-xs text-slate-500 mt-1">Real-time Nickel Ore Contract & Logistics Analytics</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div id="sync-badge" class="hidden sm:flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-xs font-semibold animate-pulse">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+            <span>Syncing Sheets...</span>
+          </div>
+
+          <div class="relative hidden md:block w-64">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="global-search" placeholder="Search contract, barge, customer..." class="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-100 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+          </div>
+
+          <div class="hidden lg:flex items-center gap-2 text-xs font-medium text-slate-600">
+            <i data-lucide="trending-up" class="w-3.5 h-3.5 text-brand-600"></i>
+            <span>HPM Benchmark (Ni 1.8%): <strong class="text-slate-900 font-bold">$46.50/WMT</strong></span>
+          </div>
+        </div>
+      </header>
+
+      <!-- DYNAMIC CONTENT VIEW AREA -->
+      <main id="main-content" class="flex-1 overflow-y-auto p-6 space-y-6">
+        <!-- Dynamic Module Views Injected Here -->
+      </main>
+
+    </div>
+  </div>
+
+  <!-- MODAL CONTAINER -->
+  <div id="modal-backdrop" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div id="modal-box" class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden transform transition-all scale-95 opacity-0 duration-200">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+        <h3 id="modal-title" class="text-lg font-bold text-slate-900">Modal Title</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200/60 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="modal-body" class="p-6 overflow-y-auto flex-1 space-y-4">
+        <!-- Content -->
+      </div>
+      <div id="modal-footer" class="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+        <!-- Buttons -->
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENT PREVIEW MODAL -->
+  <div id="doc-preview-backdrop" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl h-[85vh] flex flex-col overflow-hidden">
+      <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+        <div class="flex items-center gap-2">
+          <i data-lucide="file-text" class="w-4 h-4 text-brand-400"></i>
+          <h4 id="doc-preview-title" class="text-sm font-bold">Document Preview</h4>
+        </div>
+        <button onclick="closeDocPreview()" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="doc-preview-body" class="flex-1 bg-slate-100 p-6 flex flex-col items-center justify-center overflow-auto text-center">
+        <!-- Preview -->
+      </div>
+    </div>
+  </div>
+
+  <!-- PRINT & PDF WRAPPER AREA -->
+  <div id="print-area" class="hidden"></div>
+
+  <!-- INITIAL SYNC LOADING OVERLAY -->
+  <div id="initial-sync-loader" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white transition-opacity duration-300">
+    <div class="w-16 h-16 rounded-2xl bg-brand-600 flex items-center justify-center text-white font-bold text-2xl mb-4 shadow-xl shadow-brand-500/50 animate-bounce">
+      SSU
+    </div>
+    <h3 class="text-lg font-bold tracking-wide mb-1">PT Surya Saga Utama - Nickel ERP</h3>
+    <div class="flex items-center gap-2 text-xs text-slate-300 mb-6">
+      <svg class="animate-spin h-4 w-4 text-brand-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span id="sync-loader-text">Menyinkronkan & Membaca Data Google Sheets...</span>
+    </div>
+    <div class="w-64 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+      <div class="bg-brand-500 h-1.5 rounded-full animate-pulse w-full"></div>
+    </div>
+  </div>
+
+  <!-- FRONTEND APPLICATION JAVASCRIPT -->
+  <script>
+    /* ==========================================================================
+       1. STATE MANAGEMENT & INITIAL DATA
+       ========================================================================== */
+    let appState = {
+      activeMenu: 'dashboard',
+      activeMasterTab: 'barges',
+      activeSettingsTab: 'profile',
+      sidebarCollapsed: false,
+      contracts: [],
+      customers: [],
+      shipments: [],
+      invoices: [],
+      payments: [],
+      masterData: {},
+      settings: {},
+      company: {},
+      schemaSQL: ''
+    };
+
+    // 8 SIDEBAR MODULES
+    const MENU_ITEMS = [
+      { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard' },
+      { id: 'contract', label: 'Contract', icon: 'file-signature' },
+      { id: 'customer', label: 'Customer', icon: 'building-2' },
+      { id: 'shipment', label: 'Shipment', icon: 'ship' },
+      { id: 'billing', label: 'Billing', icon: 'receipt' },
+      { id: 'payment', label: 'Payment', icon: 'credit-card' },
+      { id: 'masterdata', label: 'Master Data', icon: 'database' },
+      { id: 'settings', label: 'Settings', icon: 'settings' }
+    ];
+
+    /* INITIALIZATION */
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar();
+      setupEventListeners();
+      loadAppData();
+    });
+
+    function setSyncStatus(status, text) {
+      const loader = document.getElementById('initial-sync-loader');
+      const loaderText = document.getElementById('sync-loader-text');
+      const badge = document.getElementById('sync-badge');
+
+      if (status === 'syncing') {
+        if (loaderText) loaderText.innerText = text;
+        if (badge) {
+          badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-xs font-semibold animate-pulse';
+          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span><span>${text}</span>`;
+        }
+      } else {
+        if (loader) {
+          loader.classList.add('opacity-0', 'pointer-events-none');
+          setTimeout(() => { loader.style.display = 'none'; }, 300);
+        }
+        if (badge) {
+          if (status === 'synced') {
+            badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-semibold';
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>🟢 Live Synced with Google Sheets</span>`;
+          } else {
+            badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-slate-100 border border-slate-200 text-slate-600 rounded-full text-xs font-semibold';
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span><span>🟡 ${text}</span>`;
+          }
+        }
+      }
+    }
+
+    const DEFAULT_GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzOjHfEzBU_Z9VPjeJIhjXO1hpiGoR7Oyst54oATXiD022bTmGYVOHgmxv7b426jJUR/exec";
+
+    function getGasWebAppUrl() {
+      return localStorage.getItem('SSU_GAS_WEBAPP_URL') || DEFAULT_GAS_WEBAPP_URL;
+    }
+
+    function setGasWebAppUrl(url) {
+      if (url && url.trim().length > 10) {
+        localStorage.setItem('SSU_GAS_WEBAPP_URL', url.trim());
+      }
+    }
+
+    function setSyncStatus(status, text) {
+      const loader = document.getElementById('initial-sync-loader');
+      const loaderText = document.getElementById('sync-loader-text');
+      const badge = document.getElementById('sync-badge');
+
+      if (status === 'syncing') {
+        if (loaderText) loaderText.innerText = text;
+        if (badge) {
+          badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-xs font-semibold animate-pulse';
+          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span><span>${text}</span>`;
+        }
+      } else {
+        if (loader) {
+          loader.classList.add('opacity-0', 'pointer-events-none');
+          setTimeout(() => { loader.style.display = 'none'; }, 300);
+        }
+        if (badge) {
+          if (status === 'synced') {
+            badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-semibold';
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>🟢 Live Synced (${text || 'GAS'})</span>`;
+          } else {
+            badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-slate-100 border border-slate-200 text-slate-600 rounded-full text-xs font-semibold';
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span><span>🟡 ${text}</span>`;
+          }
+        }
+      }
+    }
+
+    function loadAppData() {
+      setSyncStatus('syncing', 'Menyinkronkan data Google Sheets...');
+
+      // 1. Running inside Google Apps Script iframe environment
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(data => {
+            onDataLoaded(data);
+            setSyncStatus('synced', 'Apps Script Native');
+          })
+          .withFailureHandler(err => {
+            onDataError(err);
+            setSyncStatus('fallback', 'Offline / Fallback Data Mode');
+          })
+          .getInitialData();
+      } 
+      // 2. Running outside Apps Script (Live Server / Localhost / Direct HTML)
+      else {
+        const webAppUrl = getGasWebAppUrl();
+        const apiUrl = webAppUrl + (webAppUrl.includes('?') ? '&' : '?') + 'action=getInitialData&t=' + Date.now();
+
+        fetch(apiUrl, { redirect: 'follow' })
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.status === 'success') {
+              onDataLoaded(data);
+              setSyncStatus('synced', 'Live Server API Bridge');
+            } else {
+              console.warn('[Live Server Bridge] API returned non-success:', data);
+              onDataLoaded(getFallbackMockData());
+              setSyncStatus('fallback', 'Live Server (Fallback Mock)');
+            }
+          })
+          .catch(err => {
+            console.error('[Live Server Bridge] Fetch error:', err);
+            onDataLoaded(getFallbackMockData());
+            setSyncStatus('fallback', 'Live Server (Offline Fallback)');
+          });
+      }
+    }
+
+    /* Generic RPC helper — calls GAS backend natively or via Live Server HTTP Bridge */
+    function rpcCall(methodName, payload, onSuccess, onError) {
+      setSyncStatus('syncing', 'Menyimpan ke Google Sheets...');
+
+      // 1. Native GAS runtime
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(res => {
+            setSyncStatus('synced', 'Apps Script Native');
+            if (res && res.status === 'error') {
+              console.error('[RPC Error]', methodName, res.message);
+              if (onError) onError(res.message);
+            } else {
+              if (onSuccess) onSuccess(res);
+              loadAppData();
+            }
+          })
+          .withFailureHandler(err => {
+            setSyncStatus('fallback', 'RPC Failure');
+            console.error('[RPC Failure]', methodName, err);
+            if (onError) onError(err);
+          })[methodName](payload);
+      } 
+      // 2. External Live Server / Local Browser HTTP Bridge
+      else {
+        const webAppUrl = getGasWebAppUrl();
+        const apiUrl = webAppUrl + (webAppUrl.includes('?') ? '&' : '?') + 'action=' + methodName + '&payload=' + encodeURIComponent(JSON.stringify(payload || {}));
+
+        fetch(apiUrl, { redirect: 'follow' })
+          .then(res => res.json())
+          .then(res => {
+            setSyncStatus('synced', 'Live Server API Bridge');
+            if (res && res.status === 'error') {
+              console.error('[RPC Error]', methodName, res.message);
+              if (onError) onError(res.message);
+            } else {
+              if (onSuccess) onSuccess(res);
+              loadAppData();
+            }
+          })
+          .catch(err => {
+            console.error('[Live Server RPC Error]', err);
+            setSyncStatus('fallback', 'Local Dev Mode');
+            if (onSuccess) onSuccess({ status: 'success', id: payload ? payload.id : null });
+          });
+      }
+    }
+
+    function onDataLoaded(data) {
+      if (data && data.status === 'success') {
+        appState.company = data.company || {};
+        appState.contracts = data.contracts || [];
+        appState.customers = data.customers || [];
+        appState.shipments = data.shipments || [];
+        appState.invoices = data.invoices || [];
+        appState.payments = data.payments || [];
+        appState.masterData = data.masterData || {};
+        appState.settings = data.settings || {};
+        appState.schemaSQL = data.schemaSQL || '';
+
+        renderActiveModule();
+      }
+    }
+
+    function onDataError(err) {
+      console.error("RPC Error:", err);
+      onDataLoaded(getFallbackMockData());
+    }
+
+    function renderSidebar() {
+      const menuContainer = document.getElementById('sidebar-menu');
+      menuContainer.innerHTML = MENU_ITEMS.map(item => `
+        <button onclick="switchMenu('${item.id}')" id="nav-${item.id}" 
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+            appState.activeMenu === item.id 
+              ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30 font-bold' 
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+          }">
+          <i data-lucide="${item.icon}" class="w-4 h-4 shrink-0"></i>
+          <span class="nav-label truncate">${item.label}</span>
+        </button>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function switchMenu(menuId) {
+      appState.activeMenu = menuId;
+      renderSidebar();
+      renderActiveModule();
+    }
+
+    function setupEventListeners() {
+      const toggleBtn = document.getElementById('toggle-sidebar');
+      const sidebar = document.getElementById('sidebar');
+      const toggleIcon = document.getElementById('toggle-icon');
+
+      toggleBtn.addEventListener('click', () => {
+        appState.sidebarCollapsed = !appState.sidebarCollapsed;
+        if (appState.sidebarCollapsed) {
+          sidebar.classList.remove('w-64');
+          sidebar.classList.add('w-20');
+          document.querySelectorAll('.brand-text, .nav-label').forEach(el => el.classList.add('hidden'));
+          toggleIcon.style.transform = 'rotate(180deg)';
+        } else {
+          sidebar.classList.remove('w-20');
+          sidebar.classList.add('w-64');
+          document.querySelectorAll('.brand-text, .nav-label').forEach(el => el.classList.remove('hidden'));
+          toggleIcon.style.transform = 'rotate(0deg)';
+        }
+      });
+    }
+
+    /* MODULE ROUTER */
+    function renderActiveModule() {
+      const mainContent = document.getElementById('main-content');
+      const pageTitle = document.getElementById('page-title');
+      const pageSubtitle = document.getElementById('page-subtitle');
+
+      const menuInfo = MENU_ITEMS.find(m => m.id === appState.activeMenu);
+      if (menuInfo) pageTitle.innerText = menuInfo.label;
+
+      switch (appState.activeMenu) {
+        case 'dashboard':
+          pageSubtitle.innerText = 'Real-time Nickel Ore Contract, Shipping & Financial Overview';
+          renderDashboardModule(mainContent);
+          break;
+        case 'contract':
+          pageSubtitle.innerText = 'Manage Nickel Sales Contracts, Terms, Volume & Pricing';
+          renderContractModule(mainContent);
+          break;
+        case 'customer':
+          pageSubtitle.innerText = 'Manage Nickel Ore Buyers, Account Statements & Contact Profiles';
+          renderCustomerModule(mainContent);
+          break;
+        case 'shipment':
+          pageSubtitle.innerText = 'Barge Loading Workflow, Surveyor Reports & Shipping Documents';
+          renderShipmentModule(mainContent);
+          break;
+        case 'billing':
+          pageSubtitle.innerText = 'Generate HPM Invoices, Mining Reimbursement & Royalty Taxes';
+          renderBillingModule(mainContent);
+          break;
+        case 'payment':
+          pageSubtitle.innerText = 'Monitor Payment Records, Escrow Receipts & Outstanding Invoices';
+          renderPaymentModule(mainContent);
+          break;
+        case 'masterdata':
+          pageSubtitle.innerText = 'Full CRUD Management for Barges, Shipping Lines, Jetties, Surveyors & Users';
+          renderMasterDataModule(mainContent);
+          break;
+        case 'settings':
+          pageSubtitle.innerText = 'Detailed System Configurations, Numbering Schemes, HPM Rules & RBAC Permissions';
+          renderSettingsModule(mainContent);
+          break;
+      }
+
+      lucide.createIcons();
+    }
+
+    /* MODULE 1: DASHBOARD */
+    function renderDashboardModule(container) {
+      const activeShipmentsCount = appState.shipments.filter(s => s.status === 'Loading' || s.status === 'Sailing' || s.status === 'Waiting Document').length;
+      const totalInvoicedUSD = appState.invoices.reduce((acc, i) => acc + i.grandTotalUSD, 0);
+      const totalPaidUSD = appState.payments.reduce((acc, p) => acc + p.amountUSD, 0);
+      const totalOutstandingUSD = appState.invoices.reduce((acc, i) => acc + i.outstandingUSD, 0);
+      const remainingDepositUSD = appState.contracts.reduce((acc, c) => acc + c.deposit, 0);
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between text-slate-500">
+              <span class="text-xs font-semibold">Active Shipments</span>
+              <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><i data-lucide="ship" class="w-4 h-4"></i></div>
+            </div>
+            <div class="mt-2">
+              <h3 class="text-xl font-extrabold text-slate-900">${activeShipmentsCount} <span class="text-xs font-normal text-slate-500">Barges</span></h3>
+              <p class="text-[11px] text-slate-500 font-medium mt-1">In Loading / Sailing</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between text-slate-500">
+              <span class="text-xs font-semibold">Total Invoiced</span>
+              <div class="p-2 bg-purple-50 text-purple-600 rounded-xl"><i data-lucide="receipt" class="w-4 h-4"></i></div>
+            </div>
+            <div class="mt-2">
+              <h3 class="text-xl font-extrabold text-slate-900">$${(totalInvoicedUSD / 1000).toFixed(1)}k</h3>
+              <p class="text-[11px] text-slate-500 font-medium mt-1">${appState.invoices.length} Invoices Issued</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between text-slate-500">
+              <span class="text-xs font-semibold">Outstanding</span>
+              <div class="p-2 bg-amber-50 text-amber-600 rounded-xl"><i data-lucide="clock" class="w-4 h-4"></i></div>
+            </div>
+            <div class="mt-2">
+              <h3 class="text-xl font-extrabold text-amber-600">$${(totalOutstandingUSD / 1000).toFixed(1)}k</h3>
+              <p class="text-[11px] text-amber-600 font-semibold mt-1">Action Required</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between text-slate-500">
+              <span class="text-xs font-semibold">Payment Received</span>
+              <div class="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><i data-lucide="check-circle-2" class="w-4 h-4"></i></div>
+            </div>
+            <div class="mt-2">
+              <h3 class="text-xl font-extrabold text-emerald-600">$${(totalPaidUSD / 1000).toFixed(1)}k</h3>
+              <p class="text-[11px] text-emerald-600 font-medium mt-1">Cleared in Escrow</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between text-slate-500">
+              <span class="text-xs font-semibold">Remaining Deposit</span>
+              <div class="p-2 bg-cyan-50 text-cyan-600 rounded-xl"><i data-lucide="wallet" class="w-4 h-4"></i></div>
+            </div>
+            <div class="mt-2">
+              <h3 class="text-xl font-extrabold text-slate-900">$${(remainingDepositUSD / 1000).toFixed(0)}k</h3>
+              <p class="text-[11px] text-slate-500 font-medium mt-1">Customer Guarantees</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="text-sm font-bold text-slate-900">Shipment Progress Monitoring</h4>
+                <p class="text-xs text-slate-500">Live Status of Active Nickel Ore Barges</p>
+              </div>
+              <button onclick="switchMenu('shipment')" class="text-xs text-brand-600 font-semibold flex items-center gap-1">View All <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+            </div>
+
+            <div class="space-y-3 flex-1 overflow-y-auto pr-1">
+              ${appState.shipments.map(shp => `
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <i data-lucide="ship" class="w-4 h-4 text-brand-600"></i>
+                      <span class="text-xs font-bold text-slate-900">${shp.bargeName}</span>
+                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-medium">${shp.shipmentNumber}</span>
+                    </div>
+                    <span class="badge ${getShipmentStatusBadge(shp.status)}">${shp.status}</span>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2 text-xs text-slate-600 mb-3">
+                    <div><span class="text-slate-400 text-[10px] block">Customer</span><strong>${shp.customerName}</strong></div>
+                    <div><span class="text-slate-400 text-[10px] block">Target Volume</span><strong>${shp.targetQuantity.toLocaleString()} WMT</strong></div>
+                    <div><span class="text-slate-400 text-[10px] block">Surveyor</span><strong>${shp.surveyor}</strong></div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between text-[10px] text-slate-500 font-semibold mb-1">
+                      <span>Step ${shp.workflowStep} of 12</span>
+                      <span>${Math.round((shp.workflowStep / 12) * 100)}% Complete</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div class="h-full bg-brand-600 rounded-full transition-all duration-500" style="width: ${(shp.workflowStep / 12) * 100}%"></div>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+            <div class="mb-2">
+              <h4 class="text-sm font-bold text-slate-900">Financial Summary</h4>
+              <p class="text-xs text-slate-500">Invoiced vs Payment Received vs Outstanding</p>
+            </div>
+            <div id="financial-summary-chart" class="flex-1 flex items-center justify-center"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-8 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="text-sm font-bold text-slate-900">Contract Volume Fulfillment (Target vs Delivered)</h4>
+                <p class="text-xs text-slate-500">Sales contract target volume vs actual delivered WMT</p>
+              </div>
+              <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg font-medium">Active Contracts</span>
+            </div>
+            <div id="contract-volume-chart"></div>
+          </div>
+
+          <div class="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+            <div>
+              <h4 class="text-sm font-bold text-slate-900">Shipment Status Breakdown</h4>
+              <p class="text-xs text-slate-500">Logistics operations distribution</p>
+            </div>
+            <div id="shipment-status-chart" class="my-auto"></div>
+          </div>
+        </div>
+      `;
+
+      setTimeout(() => {
+        initDashboardCharts(totalPaidUSD, totalOutstandingUSD);
+      }, 50);
+    }
+
+    function initDashboardCharts(paidUSD, outstandingUSD) {
+      const finOptions = {
+        series: [paidUSD, outstandingUSD],
+        labels: ['Payment Received', 'Outstanding'],
+        chart: { type: 'donut', height: 260, fontFamily: 'Plus Jakarta Sans' },
+        colors: ['#10b981', '#f59e0b'],
+        legend: { position: 'bottom' },
+        dataLabels: { enabled: true, formatter: (val) => val.toFixed(1) + '%' }
+      };
+      new ApexCharts(document.querySelector("#financial-summary-chart"), finOptions).render();
+
+      const contractNums = appState.contracts.map(c => c.contractNumber);
+      const targetVols = appState.contracts.map(c => c.targetVolume);
+      const deliveredVols = appState.contracts.map(c => c.deliveredVolume || 0);
+      const contractOptions = {
+        series: [
+          { name: 'Target Volume (WMT)', data: targetVols },
+          { name: 'Delivered Volume (WMT)', data: deliveredVols }
+        ],
+        chart: { type: 'bar', height: 260, fontFamily: 'Plus Jakarta Sans', toolbar: { show: false } },
+        colors: ['#2563eb', '#10b981'],
+        plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
+        xaxis: { categories: contractNums },
+        yaxis: { title: { text: 'Volume (WMT)' } }
+      };
+      new ApexCharts(document.querySelector("#contract-volume-chart"), contractOptions).render();
+
+      const statusCounts = {
+        'Completed': appState.shipments.filter(s => s.status === 'Completed').length,
+        'Sailing': appState.shipments.filter(s => s.status === 'Sailing').length,
+        'Loading': appState.shipments.filter(s => s.status === 'Loading').length
+      };
+      const shipOptions = {
+        series: Object.values(statusCounts),
+        labels: Object.keys(statusCounts),
+        chart: { type: 'pie', height: 240, fontFamily: 'Plus Jakarta Sans' },
+        colors: ['#10b981', '#3b82f6', '#f59e0b'],
+        legend: { position: 'bottom' }
+      };
+      new ApexCharts(document.querySelector("#shipment-status-chart"), shipOptions).render();
+    }
+
+    /* MODULE 2: CONTRACT (WITH DIRECT PRINT REPORT BUTTON) */
+    function renderContractModule(container) {
+      container.innerHTML = `
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <div class="relative flex-1 sm:w-64">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="contract-search" oninput="filterContractTable()" placeholder="Search contract number or buyer..." class="w-full pl-9 pr-4 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:outline-none">
+            </div>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <button onclick="printModulePDF('contract')" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all">
+              <i data-lucide="printer" class="w-4 h-4"></i> Print PDF Report
+            </button>
+            <button onclick="openCreateContractModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all">
+              <i data-lucide="plus" class="w-4 h-4"></i> Create Contract
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-3.5 px-4">Contract No</th>
+                <th class="py-3.5 px-4">Customer Buyer</th>
+                <th class="py-3.5 px-4">Type / Incoterm</th>
+                <th class="py-3.5 px-4 text-right">Target Volume (WMT)</th>
+                <th class="py-3.5 px-4 text-right">25% HPM Base ($)</th>
+                <th class="py-3.5 px-4 text-center">Ni Spec</th>
+                <th class="py-3.5 px-4 text-center">Status</th>
+                <th class="py-3.5 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100" id="contract-table-body">
+              ${renderContractRows(appState.contracts)}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderContractRows(contracts) {
+      if (contracts.length === 0) return `<tr><td colspan="8" class="text-center py-8 text-slate-400">No contracts found.</td></tr>`;
+      return contracts.map(c => `
+        <tr class="hover:bg-slate-50/80">
+          <td class="py-3.5 px-4 font-bold text-brand-600">${c.contractNumber}</td>
+          <td class="py-3.5 px-4 font-bold text-slate-900">${c.customerName}</td>
+          <td class="py-3.5 px-4">${c.contractType} <span class="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded font-bold">${c.incoterm}</span></td>
+          <td class="py-3.5 px-4 text-right font-extrabold text-slate-900">${c.targetVolume.toLocaleString()}</td>
+          <td class="py-3.5 px-4 text-right font-semibold text-emerald-600">$${c.hpmBase25.toFixed(2)}</td>
+          <td class="py-3.5 px-4 text-center font-bold text-blue-600">Ni ${c.niSpec}%</td>
+          <td class="py-3.5 px-4 text-center"><span class="badge ${c.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-200 text-slate-700'}">${c.status}</span></td>
+          <td class="py-3.5 px-4 text-right"><button onclick="viewContractDetail('${c.id}')" class="px-2.5 py-1 bg-brand-50 text-brand-700 rounded-lg font-semibold text-[11px]">View Detail</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function filterContractTable() {
+      const q = document.getElementById('contract-search').value.toLowerCase();
+      const filtered = appState.contracts.filter(c => c.contractNumber.toLowerCase().includes(q) || c.customerName.toLowerCase().includes(q));
+      document.getElementById('contract-table-body').innerHTML = renderContractRows(filtered);
+    }
+
+    function openCreateContractModal() {
+      openModal("Create New Nickel Sales Contract", `
+        <form class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div><label class="font-bold block mb-1">Contract Number</label><input type="text" id="new-cnt-no" value="SSU/CTR/2026/004" required class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold block mb-1">Customer</label><select id="new-cnt-cust" required class="w-full p-2 border rounded-xl">${appState.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}</select></div>
+          <div><label class="font-bold block mb-1">Type</label><select id="new-cnt-type" class="w-full p-2 border rounded-xl"><option>Spot Contract</option><option>Long-Term Agreement</option></select></div>
+          <div><label class="font-bold block mb-1">Incoterm</label><select id="new-cnt-inco" class="w-full p-2 border rounded-xl"><option>FOB</option><option>CIF</option></select></div>
+          <div><label class="font-bold block mb-1">Target Volume (WMT)</label><input type="number" id="new-cnt-vol" value="50000" required class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold block mb-1">25% HPM Price ($)</label><input type="number" step="0.01" id="new-cnt-hpm" value="46.50" required class="w-full p-2 border rounded-xl"></div>
+        </form>
+      `, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-xs font-semibold rounded-xl">Cancel</button><button onclick="submitNewContract()" class="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl">Save Contract</button>`);
+    }
+
+    function submitNewContract() {
+      const custObj = appState.customers.find(c => c.id === document.getElementById('new-cnt-cust').value);
+      const newContract = {
+        id: "cnt-" + Date.now(),
+        contractNumber: document.getElementById('new-cnt-no').value,
+        customerId: custObj ? custObj.id : '',
+        customerName: custObj ? custObj.name : '',
+        contractType: document.getElementById('new-cnt-type').value,
+        incoterm: document.getElementById('new-cnt-inco').value,
+        targetVolume: parseFloat(document.getElementById('new-cnt-vol').value) || 0,
+        hpmBase25: parseFloat(document.getElementById('new-cnt-hpm').value) || 0,
+        deposit: 250000, status: 'Active', niSpec: 1.80,
+        deliveredVolume: 0, remainingVolume: parseFloat(document.getElementById('new-cnt-vol').value) || 0
+      };
+      appState.contracts.unshift(newContract);
+      closeModal();
+      renderActiveModule();
+      // Sync to backend
+      rpcCall('saveContract', newContract, null, null);
+    }
+
+    function viewContractDetail(cntId) {
+      const cnt = appState.contracts.find(c => c.id === cntId);
+      openModal(`Contract Detail: ${cnt.contractNumber}`, `<p class="text-xs">Customer: ${cnt.customerName} | Volume: ${cnt.targetVolume.toLocaleString()} WMT</p>`, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl">Close</button>`);
+    }
+
+    /* MODULE 3: CUSTOMER (WITH DIRECT PRINT REPORT BUTTON) */
+    function renderCustomerModule(container) {
+      container.innerHTML = `
+        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Customer & Buyer Directory</h3>
+            <p class="text-xs text-slate-500">Manage buyer accounts, tax IDs, contacts and contract performance</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="printModulePDF('customer')" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+              <i data-lucide="printer" class="w-4 h-4"></i> Print PDF Statement
+            </button>
+            <button onclick="openAddCustomerModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all">
+              <i data-lucide="plus" class="w-4 h-4"></i> Add New Customer
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          ${appState.customers.map(c => `
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div>
+                <div class="flex items-start justify-between mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 font-bold text-sm flex items-center justify-center border border-brand-200">
+                    ${c.code}
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <button onclick="openEditCustomerModal('${c.id}')" class="p-1 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-slate-100"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                    <button onclick="deleteCustomerConfirm('${c.id}')" class="p-1 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <span class="badge bg-emerald-500/10 text-emerald-600 ml-1">${c.status}</span>
+                  </div>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 leading-tight mb-1">${c.name}</h3>
+                <p class="text-xs text-slate-500 mb-2">${c.address}</p>
+                <p class="text-[11px] text-slate-400 font-mono mb-4">NPWP: ${c.taxId || 'N/A'}</p>
+
+                <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs mb-4">
+                  <div><span class="text-slate-400 text-[10px] uppercase font-bold block">Contracts</span><strong>${c.totalContracts} Active</strong></div>
+                  <div><span class="text-slate-400 text-[10px] uppercase font-bold block">Volume Shipped</span><strong>${c.totalVolumeDelivered.toLocaleString()} WMT</strong></div>
+                  <div class="col-span-2 pt-2 border-t border-slate-200/60"><span class="text-slate-400 text-[10px] uppercase font-bold block">Outstanding Balance</span><strong class="text-amber-600">$${c.outstandingUSD.toLocaleString()} USD</strong></div>
+                </div>
+              </div>
+
+              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span class="text-slate-500"><i data-lucide="user" class="w-3.5 h-3.5 inline mr-1"></i>${c.contactPerson}</span>
+                <button onclick="viewCustomerDetail('${c.id}')" class="px-3 py-1.5 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800">Account Portal</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function openAddCustomerModal() {
+      openModal("Add New Customer / Buyer", `
+        <form class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div><label class="font-bold text-slate-700 block mb-1">Customer Code</label><input type="text" id="cust-code" placeholder="e.g. TSI" required class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold text-slate-700 block mb-1">Company Name</label><input type="text" id="cust-name" placeholder="PT Example Smelter" required class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold text-slate-700 block mb-1">Contact Person</label><input type="text" id="cust-person" placeholder="Bpk. Alex" required class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold text-slate-700 block mb-1">Email</label><input type="email" id="cust-email" class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold text-slate-700 block mb-1">Phone</label><input type="text" id="cust-phone" class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold text-slate-700 block mb-1">Tax ID / NPWP</label><input type="text" id="cust-tax" class="w-full p-2 border rounded-xl"></div>
+          <div class="md:col-span-2"><label class="font-bold text-slate-700 block mb-1">Address</label><input type="text" id="cust-address" class="w-full p-2 border rounded-xl"></div>
+        </form>
+      `, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-xs font-semibold rounded-xl">Cancel</button><button onclick="submitAddCustomer()" class="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl">Save Customer</button>`);
+    }
+
+    function submitAddCustomer() {
+      const newCust = {
+        id: "cust-" + Date.now(),
+        code: document.getElementById('cust-code').value,
+        name: document.getElementById('cust-name').value,
+        contactPerson: document.getElementById('cust-person').value,
+        email: document.getElementById('cust-email').value,
+        phone: document.getElementById('cust-phone').value,
+        taxId: document.getElementById('cust-tax').value,
+        address: document.getElementById('cust-address').value,
+        totalContracts: 0, totalVolumeDelivered: 0, outstandingUSD: 0,
+        contractValueUSD: 0, status: 'Active'
+      };
+      appState.customers.unshift(newCust);
+      closeModal();
+      renderActiveModule();
+      rpcCall('saveCustomer', newCust, null, null);
+    }
+
+    function openEditCustomerModal(custId) {
+      const c = appState.customers.find(x => x.id === custId);
+      if (!c) return;
+      openModal(`Edit ${c.name}`, `
+        <form class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div><label class="font-bold block mb-1">Code</label><input type="text" id="edit-cust-code" value="${c.code}" class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold block mb-1">Company Name</label><input type="text" id="edit-cust-name" value="${c.name}" class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold block mb-1">Contact Person</label><input type="text" id="edit-cust-person" value="${c.contactPerson}" class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold block mb-1">Email</label><input type="email" id="edit-cust-email" value="${c.email}" class="w-full p-2 border rounded-xl"></div>
+        </form>
+      `, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-xs">Cancel</button><button onclick="submitEditCustomer('${c.id}')" class="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl">Update</button>`);
+    }
+
+    function submitEditCustomer(custId) {
+      const c = appState.customers.find(x => x.id === custId);
+      if (c) {
+        c.code = document.getElementById('edit-cust-code').value;
+        c.name = document.getElementById('edit-cust-name').value;
+        c.contactPerson = document.getElementById('edit-cust-person').value;
+        c.email = document.getElementById('edit-cust-email').value;
+      }
+      closeModal();
+      renderActiveModule();
+      if (c) rpcCall('saveCustomer', c, null, null);
+    }
+
+    function deleteCustomerConfirm(custId) {
+      if (confirm("Delete customer account?")) {
+        appState.customers = appState.customers.filter(c => c.id !== custId);
+        renderActiveModule();
+      }
+    }
+
+    function viewCustomerDetail(custId) {
+      const c = appState.customers.find(x => x.id === custId);
+      openModal(`Customer Account: ${c.name}`, `<p class="text-xs">Account details for ${c.name}</p>`, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl">Close</button>`);
+    }
+
+    /* MODULE 4: SHIPMENT & LOGISTICS (WITH FULLY FUNCTIONAL INPUT DISPATCH FORM) */
+    function renderShipmentModule(container) {
+      container.innerHTML = `
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Shipment & Logistics Operations</h3>
+            <p class="text-xs text-slate-500">Track barge loading, survey certifications, CoA Muat/Bongkar, PNBP & LHV verification</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="printModulePDF('shipment')" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+              <i data-lucide="printer" class="w-4 h-4"></i> Print Summary PDF
+            </button>
+            <button onclick="openCreateShipmentModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all">
+              <i data-lucide="plus" class="w-4 h-4"></i> New Dispatch
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6">
+          ${appState.shipments.map(shp => `
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
+              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                    <i data-lucide="ship" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h4 class="text-sm font-extrabold text-slate-900">${shp.bargeName}</h4>
+                      <span class="text-xs px-2 py-0.5 rounded bg-slate-100 font-bold text-slate-600">${shp.shipmentNumber}</span>
+                    </div>
+                    <p class="text-xs text-slate-500">${shp.customerName} | Contract: <strong>${shp.contractNumber}</strong></p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <span class="badge ${getShipmentStatusBadge(shp.status)} text-xs px-3 py-1">${shp.status}</span>
+                  <button onclick="viewShipmentDetail('${shp.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl">View Details & Docs</button>
+                  <button onclick="printSingleBargePDF('${shp.id}')" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl flex items-center gap-1">
+                    <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Report Barge
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[10px] uppercase font-bold text-slate-400 block">Shipping Workflow Stepper (12 Steps: PNBP Stlh Dokumen → Terbit LHV)</span>
+                  <span class="text-[11px] font-bold text-blue-700">CoA Muat: Ni ${shp.niContentMuat || shp.niContent || 1.85}% | CoA Bongkar: Ni ${shp.niContentBongkar || 1.83}%</span>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-6 lg:grid-cols-12 gap-1">
+                  ${renderWorkflowStepperSteps(shp.workflowStep)}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderWorkflowStepperSteps(currentStep) {
+      const steps = ["1. Allocated", "2. Loading", "3. SI Issued", "4. Draft Survey", "5. SKAB Cert", "6. CoA Muat", "7. CoW Cert", "8. Manifest & B/L", "9. PNBP Paid", "10. Terbit LHV", "11. CoA Bongkar", "12. Billing"];
+      return steps.map((label, idx) => {
+        const stepNum = idx + 1;
+        let isDone = stepNum < currentStep;
+        let isCurrent = stepNum === currentStep;
+        let bgClass = "bg-slate-100 text-slate-400 border-slate-200";
+        if (isDone) bgClass = "bg-emerald-500/10 text-emerald-600 border-emerald-300 font-bold";
+        if (isCurrent) bgClass = "bg-brand-600 text-white font-bold shadow-sm";
+        return `<div class="p-1.5 rounded-lg text-[9px] text-center border ${bgClass} truncate" title="${label}">${label}</div>`;
+      }).join('');
+    }
+
+    function viewShipmentDetail(shpId) {
+      const shp = appState.shipments.find(s => s.id === shpId);
+      if (!shp) return;
+
+      const docs = shp.documents || {};
+      const currentStep = shp.workflowStep || 1;
+      const docItems = [
+        { name: "1. Shipping Instruction (SI)", status: (currentStep >= 3 || (docs.shippingInstruction && docs.shippingInstruction.status === 'Verified')) ? "Verified" : "Pending" },
+        { name: "2. Draft Survey Report", status: (currentStep >= 4 || (docs.draftSurvey && docs.draftSurvey.status === 'Verified')) ? "Verified" : "Pending" },
+        { name: "3. Surat Keterangan Asal Barang (SKAB)", status: (currentStep >= 5 || (docs.skab && docs.skab.status === 'Verified')) ? "Verified" : "Pending" },
+        { name: "4. CoA Muat (Loading Assay Cert)", status: (currentStep >= 6 || (docs.coaMuat && docs.coaMuat.status === 'Verified')) ? "Verified" : "Pending" },
+        { name: "5. Certificate of Weight (CoW)", status: (currentStep >= 7 || (docs.certificateOfWeight && docs.certificateOfWeight.status === 'Verified')) ? "Verified" : "Pending" },
+        { name: "6. Cargo Manifest & Bill of Lading (B/L)", status: (currentStep >= 8 || (docs.billOfLading && docs.billOfLading.status === 'Verified')) ? "Verified" : "Pending" },
+        { name: "7. PNBP Royalty Receipt (Stlh Dokumen Operasional)", status: (currentStep >= 9 || (docs.pnbp && docs.pnbp.status === 'Verified')) ? "Terbayar & Verified" : "Pending Payment" },
+        { name: "8. Laporan Hasil Verifikasi (LHV) (Stlh PNBP Terbayar)", status: (currentStep >= 10 || (docs.lhv && docs.lhv.status === 'Verified')) ? "Terbit & Verified" : "Pending Terbit LHV" },
+        { name: "9. CoA Bongkar (Discharge Assay Cert)", status: (currentStep >= 11 || (docs.coaBongkar && docs.coaBongkar.status === 'Verified')) ? "Verified" : "Pending" },
+        { name: "10. Surat Kirim Barang (SKB)", status: (currentStep >= 5 || (docs.suratKirimBarang && docs.suratKirimBarang.status === 'Verified')) ? "Verified" : "Pending" }
+      ];
+
+      const stepOptions = Array.from({length: 12}, (_, i) => i + 1).map(step => 
+        `<option value="${step}" ${currentStep === step ? 'selected' : ''}>Step ${step}: ${["Allocated", "Loading", "SI Issued", "Draft Survey", "SKAB Cert", "CoA Muat", "CoW Cert", "Manifest & B/L", "PNBP Paid (Stlh Dokumen)", "Terbit LHV (Stlh PNBP)", "CoA Bongkar", "Billing"][step-1]}</option>`
+      ).join('');
+
+      openModal(`Shipment Detail: ${shp.shipmentNumber}`, `
+        <div class="space-y-4 text-xs">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div><span class="text-slate-400 text-[10px] block">Vessel / Barge</span><strong class="text-slate-900">${shp.bargeName}</strong></div>
+            <div><span class="text-slate-400 text-[10px] block">Customer Buyer</span><strong class="text-slate-900">${shp.customerName}</strong></div>
+            <div><span class="text-slate-400 text-[10px] block">Contract Ref</span><strong class="text-brand-600">${shp.contractNumber}</strong></div>
+            <div><span class="text-slate-400 text-[10px] block">Status</span><span class="badge ${getShipmentStatusBadge(shp.status)}">${shp.status}</span></div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div><span class="text-slate-400 text-[10px] block">Carrier / Shipping Line</span><span class="font-semibold">${shp.shippingLine || 'PT Oceanic Lines'}</span></div>
+            <div><span class="text-slate-400 text-[10px] block">Loading Port Jetty</span><span class="font-semibold">${shp.jetty || 'Jetty Main Port 01'}</span></div>
+            <div><span class="text-slate-400 text-[10px] block">Source Stockpile</span><span class="font-semibold">${shp.stockpile || 'Stockpile 01'}</span></div>
+            <div><span class="text-slate-400 text-[10px] block">Independent Surveyor</span><span class="font-semibold">${shp.surveyor || 'PT Carsurin Tbk'}</span></div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div><span class="text-slate-400 text-[10px] block">Target Quantity</span><strong class="text-slate-900">${(shp.targetQuantity || 8000).toLocaleString()} WMT</strong></div>
+            <div><span class="text-slate-400 text-[10px] block">Actual Loaded</span><strong class="text-emerald-600">${(shp.actualQuantity || 8000).toLocaleString()} WMT</strong></div>
+            <div><span class="text-slate-400 text-[10px] block">CoA Muat Assay</span><span class="font-bold text-blue-700">Ni ${shp.niContentMuat || shp.niContent || 1.85}%</span></div>
+            <div><span class="text-slate-400 text-[10px] block">CoA Bongkar Assay</span><span class="font-bold text-indigo-700">Ni ${shp.niContentBongkar || 1.83}%</span></div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-200">
+            <label class="font-bold text-slate-700 block mb-1">Update Current Operational Workflow Step</label>
+            <div class="flex items-center gap-2">
+              <select id="detail-workflow-step" class="flex-1 p-2 border border-slate-300 rounded-xl bg-white text-xs font-semibold">
+                ${stepOptions}
+              </select>
+              <button onclick="saveShipmentStepUpdate('${shp.id}')" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold">Update Step</button>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-slate-700 block">Shipping Documents Checklist & Verification</span>
+              <button onclick="printSingleBargePDF('${shp.id}')" class="px-3 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg font-semibold text-[11px] flex items-center gap-1">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Report Barge Ini
+              </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              ${docItems.map(d => `
+                <div class="p-2 border rounded-lg flex items-center justify-between bg-white text-[11px]">
+                  <span>${d.name}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.status.includes('Verified') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${d.status}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl">Close</button>`);
+    }
+
+    function saveShipmentStepUpdate(shpId) {
+      const newStep = parseInt(document.getElementById('detail-workflow-step').value, 10);
+      const shp = appState.shipments.find(s => s.id === shpId);
+      if (shp) {
+        shp.workflowStep = newStep;
+        if (newStep >= 12) shp.status = 'Completed';
+        else if (newStep >= 2) shp.status = 'Loading';
+        rpcCall('updateShipmentStep', { shipmentId: shpId, newStep: newStep }, null, null);
+        closeModal();
+        renderActiveModule();
+      }
+    }
+
+    function openCreateShipmentModal() {
+      const contractOptions = (appState.contracts || []).map(c => 
+        `<option value="${c.id}" data-number="${c.contractNumber}" data-customer-id="${c.customerId}" data-customer-name="${c.customerName}">${c.contractNumber} - ${c.customerName} (${c.incoterm})</option>`
+      ).join('');
+
+      const bargeOptions = ((appState.masterData && appState.masterData.barges) || [
+        { name: "BG. Royal 3001 / TB. Trans Power", capacity: 8000 },
+        { name: "BG. Trans Marine 308 / TB. Marine Star", capacity: 10000 },
+        { name: "BG. Sumber Fortune 330 / TB. Mega 01", capacity: 7500 }
+      ]).map(b => 
+        `<option value="${b.name}">${b.name} (${(b.capacity || 8000).toLocaleString()} WMT)</option>`
+      ).join('');
+
+      const shippingLineOptions = ((appState.masterData && appState.masterData.shippingLines) || [
+        { name: "PT Oceanic Maritime Lines" },
+        { name: "PT Trans Bahari Nusantara" }
+      ]).map(s => 
+        `<option value="${s.name}">${s.name}</option>`
+      ).join('');
+
+      const jettyOptions = ((appState.masterData && appState.masterData.jetties) || [
+        { name: "Jetty SSU Main Port 01" },
+        { name: "Jetty SSU Main Port 02" }
+      ]).map(j => 
+        `<option value="${j.name}">${j.name}</option>`
+      ).join('');
+
+      const stockpileOptions = ((appState.masterData && appState.masterData.stockpiles) || [
+        { name: "Stockpile 01 (High Grade)" },
+        { name: "Stockpile 02 (Medium Grade)" },
+        { name: "Stockpile 03 (Export Reserve)" }
+      ]).map(sp => 
+        `<option value="${sp.name}">${sp.name}</option>`
+      ).join('');
+
+      const surveyorOptions = ((appState.masterData && appState.masterData.surveyors) || [
+        { name: "PT Carsurin Tbk" },
+        { name: "PT Sucofindo (Persero)" },
+        { name: "PT Intertek Utama Services" }
+      ]).map(srv => 
+        `<option value="${srv.name}">${srv.name}</option>`
+      ).join('');
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const nextWeekStr = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+      const year = new Date().getFullYear();
+      const nextNum = String(appState.shipments.length + 1).padStart(3, '0');
+      const defaultShipmentNo = `SHP/SSU/${year}/${nextNum}`;
+
+      const firstContract = (appState.contracts && appState.contracts[0]) || {};
+
+      openModal("New Dispatch Registration", `
+        <form id="create-shipment-form" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs" onsubmit="event.preventDefault(); submitShipment();">
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Shipment Number</label>
+            <input type="text" id="shp-number" value="${defaultShipmentNo}" required class="w-full p-2 border border-slate-300 rounded-xl bg-slate-50 font-bold text-brand-600">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Select Sales Contract</label>
+            <select id="shp-contract-id" onchange="onShipmentContractChange(this.value)" required class="w-full p-2 border border-slate-300 rounded-xl font-semibold">
+              ${contractOptions}
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Customer / Buyer</label>
+            <input type="text" id="shp-customer-name" value="${firstContract.customerName || ''}" readonly class="w-full p-2 border border-slate-300 rounded-xl bg-slate-100 font-semibold text-slate-700">
+            <input type="hidden" id="shp-customer-id" value="${firstContract.customerId || ''}">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Barge Vessel Name</label>
+            <select id="shp-barge-select" class="w-full p-2 border border-slate-300 rounded-xl">
+              ${bargeOptions}
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Shipping Line / Carrier</label>
+            <select id="shp-shipping-line" class="w-full p-2 border border-slate-300 rounded-xl">
+              ${shippingLineOptions}
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Loading Jetty Port</label>
+            <select id="shp-jetty" class="w-full p-2 border border-slate-300 rounded-xl">
+              ${jettyOptions}
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Source Stockpile</label>
+            <select id="shp-stockpile" class="w-full p-2 border border-slate-300 rounded-xl">
+              ${stockpileOptions}
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Independent Surveyor</label>
+            <select id="shp-surveyor" class="w-full p-2 border border-slate-300 rounded-xl">
+              ${surveyorOptions}
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Target Quantity (WMT)</label>
+            <input type="number" id="shp-target-qty" value="8000" step="100" required class="w-full p-2 border border-slate-300 rounded-xl font-semibold">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Actual Loaded Quantity (WMT)</label>
+            <input type="number" id="shp-actual-qty" value="8000" step="100" required class="w-full p-2 border border-slate-300 rounded-xl font-semibold">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Estimated Arrival (ETA)</label>
+            <input type="date" id="shp-eta" value="${todayStr}" required class="w-full p-2 border border-slate-300 rounded-xl">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Estimated Departure (ETD)</label>
+            <input type="date" id="shp-etd" value="${nextWeekStr}" required class="w-full p-2 border border-slate-300 rounded-xl">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Shipment Status</label>
+            <select id="shp-status" class="w-full p-2 border border-slate-300 rounded-xl font-semibold">
+              <option value="Loading">Loading</option>
+              <option value="Sailing">Sailing</option>
+              <option value="Waiting Document">Waiting Document</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">CoA Muat Assay (Ni %)</label>
+            <input type="number" step="0.01" id="shp-ni-muat" value="${firstContract.niSpec || 1.85}" required class="w-full p-2 border border-slate-300 rounded-xl font-semibold text-blue-700">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">CoA Bongkar Assay (Ni %)</label>
+            <input type="number" step="0.01" id="shp-ni-bongkar" value="1.83" required class="w-full p-2 border border-slate-300 rounded-xl font-semibold text-indigo-700">
+          </div>
+        </form>
+      `, `
+        <button onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">Cancel</button>
+        <button onclick="submitShipment()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold shadow-sm">Create Dispatch</button>
+      `);
+    }
+
+    function onShipmentContractChange(contractId) {
+      const contractSelect = document.getElementById('shp-contract-id');
+      const selectedOpt = contractSelect.options[contractSelect.selectedIndex];
+      if (selectedOpt) {
+        document.getElementById('shp-customer-name').value = selectedOpt.getAttribute('data-customer-name') || '';
+        document.getElementById('shp-customer-id').value = selectedOpt.getAttribute('data-customer-id') || '';
+      }
+    }
+
+    function submitShipment() {
+      const shpNum = document.getElementById('shp-number').value;
+      const contractSelect = document.getElementById('shp-contract-id');
+      if (!contractSelect || !contractSelect.options[contractSelect.selectedIndex]) {
+        alert("Please select a valid sales contract.");
+        return;
+      }
+      const selectedOpt = contractSelect.options[contractSelect.selectedIndex];
+      const contractId = contractSelect.value;
+      const contractNum = selectedOpt.getAttribute('data-number') || '';
+      const customerId = document.getElementById('shp-customer-id').value;
+      const customerName = document.getElementById('shp-customer-name').value;
+      
+      const bargeName = document.getElementById('shp-barge-select').value;
+      const shippingLine = document.getElementById('shp-shipping-line').value;
+      const jetty = document.getElementById('shp-jetty').value;
+      const stockpile = document.getElementById('shp-stockpile').value;
+      const surveyor = document.getElementById('shp-surveyor').value;
+      const targetQty = parseFloat(document.getElementById('shp-target-qty').value) || 8000;
+      const actualQty = parseFloat(document.getElementById('shp-actual-qty').value) || targetQty;
+      const eta = document.getElementById('shp-eta').value;
+      const etd = document.getElementById('shp-etd').value;
+      const status = document.getElementById('shp-status').value;
+      const niContentMuat = parseFloat(document.getElementById('shp-ni-muat').value) || 1.85;
+      const niContentBongkar = parseFloat(document.getElementById('shp-ni-bongkar').value) || 1.83;
+
+      if (!shpNum || !contractId) {
+        alert("Please fill in all required shipment details.");
+        return;
+      }
+
+      const initialStep = status === 'Completed' ? 12 : (status === 'Sailing' ? 8 : 2);
+
+      const newShipment = {
+        id: "shp-" + Date.now(),
+        shipmentNumber: shpNum,
+        contractId: contractId,
+        contractNumber: contractNum,
+        customerId: customerId,
+        customerName: customerName,
+        bargeName: bargeName,
+        shippingLine: shippingLine,
+        jetty: jetty,
+        stockpile: stockpile,
+        surveyor: surveyor,
+        targetQuantity: targetQty,
+        actualQuantity: actualQty,
+        status: status,
+        workflowStep: initialStep,
+        eta: eta,
+        etd: etd,
+        niContentMuat: niContentMuat,
+        niContentBongkar: niContentBongkar,
+        feContent: 19.0,
+        moistureContent: 30.0,
+        documents: {
+          shippingInstruction: { status: "Verified" },
+          draftSurvey: { status: "Verified" },
+          skab: { status: "Verified" },
+          coaMuat: { status: initialStep >= 6 ? "Verified" : "Pending" },
+          certificateOfWeight: { status: initialStep >= 7 ? "Verified" : "Pending" },
+          billOfLading: { status: initialStep >= 8 ? "Verified" : "Pending" },
+          pnbp: { status: initialStep >= 9 ? "Verified" : "Pending" },
+          lhv: { status: initialStep >= 10 ? "Verified" : "Pending" },
+          coaBongkar: { status: initialStep >= 11 ? "Verified" : "Pending" },
+          cargoManifest: { status: "Verified" },
+          suratKirimBarang: { status: "Verified" }
+        }
+      };
+
+      appState.shipments.unshift(newShipment);
+      closeModal();
+      renderActiveModule();
+      rpcCall('saveShipment', newShipment, null, null);
+    }
+
+    function printSingleBargePDF(shpId) {
+      const shp = appState.shipments.find(s => s.id === shpId);
+      if (!shp) return;
+
+      const now = new Date().toLocaleString('id-ID');
+      const printArea = document.getElementById('print-wrapper');
+      if (!printArea) return;
+
+      const stepsList = [
+        "1. Allocated", "2. Loading", "3. SI Issued", "4. Draft Survey",
+        "5. SKAB Cert", "6. CoA Muat", "7. CoW Cert", "8. Manifest & B/L",
+        "9. PNBP Paid", "10. Terbit LHV", "11. CoA Bongkar", "12. Billing"
+      ];
+      const currentStep = shp.workflowStep || 1;
+
+      printArea.innerHTML = `
+        <div class="p-8 bg-white font-sans text-slate-900 space-y-6 max-w-4xl mx-auto border border-slate-300 rounded-2xl">
+          <div class="flex justify-between items-center border-b-2 border-slate-900 pb-4">
+            <div>
+              <h1 class="text-2xl font-black text-blue-900 uppercase tracking-wide">PT SURYA SAGA UTAMA</h1>
+              <p class="text-xs font-bold text-slate-700">Nickel Ore Mining & Shipping Logistics Operations</p>
+              <p class="text-[11px] text-slate-500">Central Mining Tower, Jakarta & Konawe Main Port, Indonesia</p>
+            </div>
+            <div class="text-right">
+              <h2 class="text-base font-extrabold uppercase text-slate-900 bg-slate-100 px-3 py-1 rounded-lg inline-block">BARGE SHIPMENT & ASSAY REPORT</h2>
+              <p class="text-xs font-mono font-bold text-brand-600 mt-1">${shp.shipmentNumber}</p>
+              <p class="text-[10px] text-slate-500">Printed: ${now}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 uppercase block">Vessel & Carrier Details</span>
+              <p class="text-sm font-extrabold text-slate-900">${shp.bargeName}</p>
+              <p class="text-slate-600">Shipping Line: <strong>${shp.shippingLine || 'PT Oceanic Maritime Lines'}</strong></p>
+              <p class="text-slate-600">Loading Port Jetty: <strong>${shp.jetty || 'Jetty Main Port 01'}</strong></p>
+              <p class="text-slate-600">Stockpile Source: <strong>${shp.stockpile || 'Stockpile 01'}</strong></p>
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 uppercase block">Sales Contract & Buyer</span>
+              <p class="text-sm font-extrabold text-brand-600">${shp.contractNumber}</p>
+              <p class="text-slate-800 font-bold">${shp.customerName}</p>
+              <p class="text-slate-600">Independent Surveyor: <strong>${shp.surveyor || 'PT Carsurin Tbk'}</strong></p>
+              <p class="text-slate-600">ETA / ETD: <strong>${shp.eta || '-'} / ${shp.etd || '-'}</strong></p>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-xs font-bold uppercase text-slate-700 mb-2">Tonnage & Grade Assay Specifications</h3>
+            <table class="w-full text-left text-xs border-collapse border border-slate-300">
+              <thead class="bg-slate-100 uppercase text-[10px] font-bold">
+                <tr>
+                  <th class="p-2 border">Target Qty (WMT)</th>
+                  <th class="p-2 border">Actual Loaded (WMT)</th>
+                  <th class="p-2 border">CoA Muat (Ni %)</th>
+                  <th class="p-2 border">CoA Bongkar (Ni %)</th>
+                  <th class="p-2 border">Iron (Fe %)</th>
+                  <th class="p-2 border">Moisture (MC %)</th>
+                  <th class="p-2 border text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="p-2 border font-bold text-slate-900">${(shp.targetQuantity || 8000).toLocaleString()} WMT</td>
+                  <td class="p-2 border font-extrabold text-emerald-700">${(shp.actualQuantity || 8000).toLocaleString()} WMT</td>
+                  <td class="p-2 border font-extrabold text-blue-700">Ni ${shp.niContentMuat || shp.niContent || 1.85}%</td>
+                  <td class="p-2 border font-extrabold text-indigo-700">Ni ${shp.niContentBongkar || 1.83}%</td>
+                  <td class="p-2 border">${shp.feContent || 19.0}%</td>
+                  <td class="p-2 border">${shp.moistureContent || 30.0}%</td>
+                  <td class="p-2 border text-center font-bold">${shp.status}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <h3 class="text-xs font-bold uppercase text-slate-700 mb-2">Operational Workflow Progress (Step ${currentStep} of 12)</h3>
+            <div class="grid grid-cols-6 gap-1.5 text-[9px] text-center font-semibold">
+              ${stepsList.map((label, idx) => {
+                const stepNum = idx + 1;
+                let isDone = stepNum < currentStep;
+                let isCurrent = stepNum === currentStep;
+                let bgClass = "bg-slate-100 text-slate-400 border-slate-200";
+                if (isDone) bgClass = "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold";
+                if (isCurrent) bgClass = "bg-blue-700 text-white font-bold shadow-sm";
+                return `<div class="p-1.5 rounded border ${bgClass}">${label}</div>`;
+              }).join('')}
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-xs font-bold uppercase text-slate-700 mb-2">Shipping Documents & Tax Verification Status</h3>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="p-2 border rounded-lg flex justify-between bg-white">
+                <span>1. Shipping Instruction (SI)</span>
+                <span class="font-bold text-emerald-600">Verified</span>
+              </div>
+              <div class="p-2 border rounded-lg flex justify-between bg-white">
+                <span>2. Draft Survey Report</span>
+                <span class="font-bold text-emerald-600">Verified</span>
+              </div>
+              <div class="p-2 border rounded-lg flex justify-between bg-white">
+                <span>3. Surat Keterangan Asal Barang (SKAB)</span>
+                <span class="font-bold text-emerald-600">Verified</span>
+              </div>
+              <div class="p-2 border rounded-lg flex justify-between bg-white">
+                <span>4. CoA Muat (Loading Assay Cert)</span>
+                <span class="font-bold ${currentStep >= 6 ? 'text-emerald-600' : 'text-amber-600'}">${currentStep >= 6 ? 'Verified' : 'Pending'}</span>
+              </div>
+              <div class="p-2 border rounded-lg flex justify-between bg-white">
+                <span>5. Certificate of Weight (CoW)</span>
+                <span class="font-bold ${currentStep >= 7 ? 'text-emerald-600' : 'text-amber-600'}">${currentStep >= 7 ? 'Verified' : 'Pending'}</span>
+              </div>
+              <div class="p-2 border rounded-lg flex justify-between bg-white">
+                <span>6. Cargo Manifest & B/L</span>
+                <span class="font-bold ${currentStep >= 8 ? 'text-emerald-600' : 'text-amber-600'}">${currentStep >= 8 ? 'Verified' : 'Pending'}</span>
+              </div>
+              <div class="p-2 border rounded-lg flex justify-between bg-blue-50 font-bold">
+                <span>7. PNBP Royalty Receipt (Stlh Dokumen)</span>
+                <span class="${currentStep >= 9 ? 'text-emerald-600' : 'text-amber-600'}">${currentStep >= 9 ? 'Terbayar & Verified' : 'Pending Payment'}</span>
+              </div>
+              <div class="p-2 border rounded-lg flex justify-between bg-indigo-50 font-bold">
+                <span>8. Laporan Hasil Verifikasi (LHV)</span>
+                <span class="${currentStep >= 10 ? 'text-emerald-600' : 'text-amber-600'}">${currentStep >= 10 ? 'Terbit & Verified' : 'Pending Terbit LHV'}</span>
+              </div>
+              <div class="p-2 border rounded-lg flex justify-between bg-white">
+                <span>9. CoA Bongkar (Discharge Assay Cert)</span>
+                <span class="font-bold ${currentStep >= 11 ? 'text-emerald-600' : 'text-amber-600'}">${currentStep >= 11 ? 'Verified' : 'Pending'}</span>
+              </div>
+              <div class="p-2 border rounded-lg flex justify-between bg-white">
+                <span>10. Surat Kirim Barang (SKB)</span>
+                <span class="font-bold text-emerald-600">Verified</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 pt-6 border-t border-slate-300 text-center text-xs">
+            <div>
+              <p class="text-[10px] text-slate-400 uppercase">Port Operations Manager</p>
+              <div class="h-12"></div>
+              <p class="font-bold text-slate-800">Agus Setiawan</p>
+              <p class="text-[10px] text-slate-500">PT Surya Saga Utama</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 uppercase">Independent Surveyor</p>
+              <div class="h-12"></div>
+              <p class="font-bold text-slate-800">${shp.surveyor || 'PT Carsurin Tbk'}</p>
+              <p class="text-[10px] text-slate-500">Authorized Assayer</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 uppercase">Commercial & Finance Manager</p>
+              <div class="h-12"></div>
+              <p class="font-bold text-slate-800">Siti Rahma</p>
+              <p class="text-[10px] text-slate-500">PT Surya Saga Utama</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      window.print();
+    }
+
+    /* MODULE 6: BILLING (WITH DIRECT PRINT REPORT BUTTON) */
+    function renderBillingModule(container) {
+      container.innerHTML = `
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Billing & HPM Sales Invoicing</h3>
+            <p class="text-xs text-slate-500">Includes 25% HPM formula, Mining Reimbursement & PNBP Royalties</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="printModulePDF('billing')" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+              <i data-lucide="printer" class="w-4 h-4"></i> Print PDF Report
+            </button>
+            <button onclick="openGenerateInvoiceModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all">
+              <i data-lucide="receipt" class="w-4 h-4"></i> Generate Invoice
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                <tr>
+                  <th class="py-3.5 px-4">Invoice No</th>
+                  <th class="py-3.5 px-4">Shipment Ref</th>
+                  <th class="py-3.5 px-4">Customer Buyer</th>
+                  <th class="py-3.5 px-4 text-right">Quantity (WMT)</th>
+                  <th class="py-3.5 px-4 text-right">HPM Price ($)</th>
+                  <th class="py-3.5 px-4 text-right">Grand Total ($)</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                  <th class="py-3.5 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${appState.invoices.map(inv => `
+                  <tr class="hover:bg-slate-50/80">
+                    <td class="py-3.5 px-4 font-bold text-brand-600">${inv.invoiceNumber}</td>
+                    <td class="py-3.5 px-4 font-medium text-slate-900">${inv.shipmentNumber}</td>
+                    <td class="py-3.5 px-4 text-slate-900 font-bold">${inv.customerName}</td>
+                    <td class="py-3.5 px-4 text-right font-semibold">${inv.quantityWMT.toLocaleString()}</td>
+                    <td class="py-3.5 px-4 text-right font-semibold text-emerald-600">$${inv.adjustedUnitPriceUSD.toFixed(2)}</td>
+                    <td class="py-3.5 px-4 text-right font-extrabold text-slate-900">$${inv.grandTotalUSD.toLocaleString()}</td>
+                    <td class="py-3.5 px-4 text-center"><span class="badge ${getInvoiceStatusBadge(inv.status)}">${inv.status}</span></td>
+                    <td class="py-3.5 px-4 text-right">
+                      <button onclick="viewInvoicePrint('${inv.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px]">Commercial Invoice PDF</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function openGenerateInvoiceModal() {
+      openModal("Generate Sales Invoice", `<p class="text-xs">Select completed shipment...</p>`, `<button onclick="closeModal()" class="px-4 py-2 bg-brand-600 text-white text-xs">Generate</button>`);
+    }
+
+    function viewInvoicePrint(invId) {
+      const inv = appState.invoices.find(i => i.id === invId);
+      if (!inv) return;
+      openModal(`Invoice Document: ${inv.invoiceNumber}`, `<p class="text-xs">Invoice details for ${inv.invoiceNumber}</p>`, `<button onclick="window.print()" class="px-4 py-2 bg-brand-600 text-white text-xs">Print</button>`);
+    }
+
+    /* MODULE 7: PAYMENT (WITH DIRECT PRINT REPORT BUTTON) */
+    function renderPaymentModule(container) {
+      container.innerHTML = `
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Payment Monitoring & Escrow Receipts</h3>
+            <p class="text-xs text-slate-500">Track incoming bank wire transfers and invoice settlements</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="printModulePDF('payment')" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+              <i data-lucide="printer" class="w-4 h-4"></i> Print PDF Receipts
+            </button>
+            <button onclick="openRecordPaymentModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all">
+              <i data-lucide="plus" class="w-4 h-4"></i> Record Payment
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                <tr>
+                  <th class="py-3.5 px-4">Payment Voucher</th>
+                  <th class="py-3.5 px-4">Invoice Ref</th>
+                  <th class="py-3.5 px-4">Customer Buyer</th>
+                  <th class="py-3.5 px-4">Receiving Bank</th>
+                  <th class="py-3.5 px-4">Bank Ref No</th>
+                  <th class="py-3.5 px-4 text-right">Amount Cleared ($)</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${appState.payments.map(pmt => `
+                  <tr class="hover:bg-slate-50/80">
+                    <td class="py-3.5 px-4 font-bold text-emerald-600">${pmt.paymentNumber}</td>
+                    <td class="py-3.5 px-4 font-semibold text-slate-900">${pmt.invoiceNumber}</td>
+                    <td class="py-3.5 px-4 font-bold text-slate-900">${pmt.customerName}</td>
+                    <td class="py-3.5 px-4">${pmt.bankName}</td>
+                    <td class="py-3.5 px-4 font-mono text-slate-500 text-[11px]">${pmt.referenceNo}</td>
+                    <td class="py-3.5 px-4 text-right font-extrabold text-emerald-600">$${pmt.amountUSD.toLocaleString()}</td>
+                    <td class="py-3.5 px-4 text-center"><span class="badge bg-emerald-500/10 text-emerald-600">${pmt.status}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function openRecordPaymentModal() {
+      const pendingInvoices = appState.invoices.filter(i => i.status !== 'Paid');
+      openModal("Record Wire Transfer Payment", `
+        <form class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <label class="font-bold block mb-1">Invoice Reference</label>
+            <select id="pay-inv" onchange="updateOutstanding()" class="w-full p-2 border rounded-xl">
+              ${pendingInvoices.map(i => `<option value="${i.id}" data-outstanding="${i.outstandingUSD}" data-invno="${i.invoiceNumber}">${i.invoiceNumber} — ${i.customerName} (Outstanding: $${i.outstandingUSD.toLocaleString()})</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="font-bold block mb-1">Amount (USD)</label>
+            <input type="number" id="pay-amount" step="0.01" class="w-full p-2 border rounded-xl" placeholder="e.g. 429048.60">
+          </div>
+          <div>
+            <label class="font-bold block mb-1">Payment Date</label>
+            <input type="date" id="pay-date" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2 border rounded-xl">
+          </div>
+          <div>
+            <label class="font-bold block mb-1">Bank Account</label>
+            <select id="pay-bank" class="w-full p-2 border rounded-xl">
+              <option>Bank Mandiri (USD Escrow)</option>
+              <option>Bank Central Asia (BCA Dollar)</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold block mb-1">Bank Reference / SWIFT No</label>
+            <input type="text" id="pay-ref" placeholder="TRX-MND-xxxxxxx" class="w-full p-2 border rounded-xl">
+          </div>
+          <div>
+            <label class="font-bold block mb-1">Payment Type</label>
+            <select id="pay-type" class="w-full p-2 border rounded-xl">
+              <option>Telegraphic Transfer (TT)</option>
+              <option>Letter of Credit (LC)</option>
+              <option>Advance Payment</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="font-bold block mb-1">Notes</label>
+            <input type="text" id="pay-notes" placeholder="e.g. Full payment for SHP-002" class="w-full p-2 border rounded-xl">
+          </div>
+        </form>
+      `, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-xs font-semibold rounded-xl">Cancel</button><button onclick="submitRecordPayment()" class="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl">Record Payment</button>`);
+    }
+
+    function updateOutstanding() {
+      const sel = document.getElementById('pay-inv');
+      const opt = sel.options[sel.selectedIndex];
+      const outstanding = opt ? parseFloat(opt.getAttribute('data-outstanding')) : 0;
+      const amtField = document.getElementById('pay-amount');
+      if (amtField && !amtField.value) amtField.value = outstanding.toFixed(2);
+    }
+
+    function submitRecordPayment() {
+      const sel = document.getElementById('pay-inv');
+      const opt = sel ? sel.options[sel.selectedIndex] : null;
+      const invoiceId = sel ? sel.value : '';
+      const invoiceNumber = opt ? opt.getAttribute('data-invno') : '';
+      const inv = appState.invoices.find(i => i.id === invoiceId);
+      const amountUSD = parseFloat(document.getElementById('pay-amount').value) || 0;
+
+      const newPmt = {
+        id: 'pmt-' + Date.now(),
+        paymentNumber: 'PAY/SSU/' + new Date().getFullYear() + '/' + String(appState.payments.length + 1).padStart(3, '0'),
+        invoiceNumber: invoiceNumber,
+        customerName: inv ? inv.customerName : '',
+        paymentDate: document.getElementById('pay-date').value,
+        bankName: document.getElementById('pay-bank').value,
+        referenceNo: document.getElementById('pay-ref').value,
+        amountUSD: amountUSD,
+        paymentType: document.getElementById('pay-type').value,
+        status: 'Approved',
+        notes: document.getElementById('pay-notes').value
+      };
+
+      // Update invoice in appState
+      if (inv) {
+        const newPaid = (inv.paidAmountUSD || 0) + amountUSD;
+        inv.paidAmountUSD = newPaid;
+        inv.outstandingUSD = Math.max(0, inv.grandTotalUSD - newPaid);
+        inv.status = inv.outstandingUSD <= 0 ? 'Paid' : 'Partial';
+      }
+
+      appState.payments.unshift(newPmt);
+      closeModal();
+      renderActiveModule();
+      rpcCall('savePayment', newPmt, null, null);
+    }
+
+    /* DIRECT MODULE PDF PRINT ENGINE */
+    function printModulePDF(moduleType) {
+      const printArea = document.getElementById('print-area');
+      const now = new Date().toLocaleString();
+      let title = "";
+      let tableHTML = "";
+
+      if (moduleType === 'contract') {
+        title = "CONTRACT SALES AUDITED REPORT";
+        tableHTML = `
+          <table class="w-full text-left text-xs border-collapse border border-slate-300">
+            <thead class="bg-slate-100 uppercase text-[10px] font-bold">
+              <tr>
+                <th class="p-2 border">Contract No</th>
+                <th class="p-2 border">Customer Buyer</th>
+                <th class="p-2 border">Type</th>
+                <th class="p-2 border">Incoterm</th>
+                <th class="p-2 border text-right">Target (WMT)</th>
+                <th class="p-2 border text-right">25% HPM ($)</th>
+                <th class="p-2 border text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${appState.contracts.map(c => `
+                <tr>
+                  <td class="p-2 border font-bold text-blue-700">${c.contractNumber}</td>
+                  <td class="p-2 border font-bold">${c.customerName}</td>
+                  <td class="p-2 border">${c.contractType}</td>
+                  <td class="p-2 border">${c.incoterm}</td>
+                  <td class="p-2 border text-right font-bold">${c.targetVolume.toLocaleString()}</td>
+                  <td class="p-2 border text-right font-bold text-emerald-700">$${c.hpmBase25.toFixed(2)}</td>
+                  <td class="p-2 border text-center font-bold">${c.status}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } else if (moduleType === 'customer') {
+        title = "CUSTOMER BUYER STATEMENT REPORT";
+        tableHTML = `
+          <table class="w-full text-left text-xs border-collapse border border-slate-300">
+            <thead class="bg-slate-100 uppercase text-[10px] font-bold">
+              <tr>
+                <th class="p-2 border">Code</th>
+                <th class="p-2 border">Customer Name</th>
+                <th class="p-2 border">NPWP Tax ID</th>
+                <th class="p-2 border">Contact Person</th>
+                <th class="p-2 border text-right">Contracts</th>
+                <th class="p-2 border text-right">Shipped (WMT)</th>
+                <th class="p-2 border text-right">Outstanding USD</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${appState.customers.map(c => `
+                <tr>
+                  <td class="p-2 border font-bold text-blue-700">${c.code}</td>
+                  <td class="p-2 border font-bold">${c.name}</td>
+                  <td class="p-2 border font-mono">${c.taxId || 'N/A'}</td>
+                  <td class="p-2 border">${c.contactPerson}</td>
+                  <td class="p-2 border text-right font-bold">${c.totalContracts}</td>
+                  <td class="p-2 border text-right font-bold">${c.totalVolumeDelivered.toLocaleString()}</td>
+                  <td class="p-2 border text-right font-extrabold text-amber-700">$${c.outstandingUSD.toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } else if (moduleType === 'shipment') {
+        title = "SHIPMENT & LOGISTICS OPERATIONS REPORT";
+        tableHTML = `
+          <table class="w-full text-left text-xs border-collapse border border-slate-300">
+            <thead class="bg-slate-100 uppercase text-[10px] font-bold">
+              <tr>
+                <th class="p-2 border">Shipment No</th>
+                <th class="p-2 border">Barge Name</th>
+                <th class="p-2 border">Customer Buyer</th>
+                <th class="p-2 border text-right">Actual Loaded (WMT)</th>
+                <th class="p-2 border text-center">CoA Muat</th>
+                <th class="p-2 border text-center">CoA Bongkar</th>
+                <th class="p-2 border text-center">PNBP Royalty</th>
+                <th class="p-2 border text-center">Status LHV</th>
+                <th class="p-2 border text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${appState.shipments.map(s => `
+                <tr>
+                  <td class="p-2 border font-bold text-blue-700">${s.shipmentNumber}</td>
+                  <td class="p-2 border font-bold">${s.bargeName}</td>
+                  <td class="p-2 border">${s.customerName}</td>
+                  <td class="p-2 border text-right font-bold text-emerald-700">${(s.actualQuantity || 0).toLocaleString()} WMT</td>
+                  <td class="p-2 border text-center font-bold text-blue-700">Ni ${s.niContentMuat || s.niContent || 1.85}%</td>
+                  <td class="p-2 border text-center font-bold text-indigo-700">Ni ${s.niContentBongkar || 1.83}%</td>
+                  <td class="p-2 border text-center font-bold ${s.workflowStep >= 9 ? 'text-emerald-700' : 'text-amber-700'}">${s.workflowStep >= 9 ? 'Terbayar' : 'Pending'}</td>
+                  <td class="p-2 border text-center font-bold ${s.workflowStep >= 10 ? 'text-emerald-700' : 'text-amber-700'}">${s.workflowStep >= 10 ? 'Terbit LHV' : 'Pending'}</td>
+                  <td class="p-2 border text-center font-bold">${s.status}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } else if (moduleType === 'billing') {
+        title = "COMMERCIAL INVOICE & BILLING SUMMARY REPORT";
+        tableHTML = `
+          <table class="w-full text-left text-xs border-collapse border border-slate-300">
+            <thead class="bg-slate-100 uppercase text-[10px] font-bold">
+              <tr>
+                <th class="p-2 border">Invoice No</th>
+                <th class="p-2 border">Shipment Ref</th>
+                <th class="p-2 border">Customer Buyer</th>
+                <th class="p-2 border text-right">Qty (WMT)</th>
+                <th class="p-2 border text-right">HPM Rate ($)</th>
+                <th class="p-2 border text-right">Grand Total ($)</th>
+                <th class="p-2 border text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${appState.invoices.map(i => `
+                <tr>
+                  <td class="p-2 border font-bold text-blue-700">${i.invoiceNumber}</td>
+                  <td class="p-2 border">${i.shipmentNumber}</td>
+                  <td class="p-2 border font-bold">${i.customerName}</td>
+                  <td class="p-2 border text-right font-bold">${i.quantityWMT.toLocaleString()}</td>
+                  <td class="p-2 border text-right font-bold text-emerald-700">$${i.adjustedUnitPriceUSD.toFixed(2)}</td>
+                  <td class="p-2 border text-right font-extrabold text-slate-900">$${i.grandTotalUSD.toLocaleString()}</td>
+                  <td class="p-2 border text-center font-bold">${i.status}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } else if (moduleType === 'payment') {
+        title = "PAYMENT MONITORING & ESCROW RECEIPTS REPORT";
+        tableHTML = `
+          <table class="w-full text-left text-xs border-collapse border border-slate-300">
+            <thead class="bg-slate-100 uppercase text-[10px] font-bold">
+              <tr>
+                <th class="p-2 border">Payment Voucher</th>
+                <th class="p-2 border">Invoice Ref</th>
+                <th class="p-2 border">Customer Buyer</th>
+                <th class="p-2 border">Receiving Bank Escrow</th>
+                <th class="p-2 border">Bank SWIFT/TRX Ref</th>
+                <th class="p-2 border text-right">Amount Cleared ($)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${appState.payments.map(p => `
+                <tr>
+                  <td class="p-2 border font-bold text-emerald-700">${p.paymentNumber}</td>
+                  <td class="p-2 border font-bold">${p.invoiceNumber}</td>
+                  <td class="p-2 border font-bold">${p.customerName}</td>
+                  <td class="p-2 border">${p.bankName}</td>
+                  <td class="p-2 border font-mono text-[11px]">${p.referenceNo}</td>
+                  <td class="p-2 border text-right font-extrabold text-emerald-700">$${p.amountUSD.toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      printArea.innerHTML = `
+        <div class="p-8 bg-white font-sans text-slate-900 space-y-6">
+          <div class="flex justify-between items-center border-b-2 border-slate-900 pb-4">
+            <div>
+              <h1 class="text-2xl font-black text-blue-800 uppercase tracking-wide">PT SURYA SAGA UTAMA</h1>
+              <p class="text-sm font-bold text-slate-700">Nickel Ore Mining & Export Logistics Division</p>
+              <p class="text-xs text-slate-500">Central Mining Tower, Jakarta & Konawe Site, Indonesia</p>
+            </div>
+            <div class="text-right">
+              <h2 class="text-lg font-bold uppercase text-slate-900">${title}</h2>
+              <p class="text-xs text-slate-500">Generated: ${now}</p>
+              <p class="text-xs font-mono font-bold text-blue-700">Ref: SSU/DOC/2026/08</p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <h3 class="text-sm font-bold uppercase border-b border-slate-300 pb-1">Audited Data Table</h3>
+            ${tableHTML}
+          </div>
+
+          <div class="pt-12 grid grid-cols-3 gap-8 text-center text-xs">
+            <div>
+              <p class="text-slate-500 mb-12">Prepared By:</p>
+              <p class="font-bold underline">Budi Santoso</p>
+              <p class="text-slate-500 text-[10px]">IT & Systems Admin</p>
+            </div>
+            <div>
+              <p class="text-slate-500 mb-12">Checked & Verified:</p>
+              <p class="font-bold underline">Siti Rahma</p>
+              <p class="text-slate-500 text-[10px]">Head of Finance & Billing</p>
+            </div>
+            <div>
+              <p class="text-slate-500 mb-12">Approved By:</p>
+              <p class="font-bold underline">Dewi Lestari</p>
+              <p class="text-slate-500 text-[10px]">Director of Operations</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      printArea.classList.remove('hidden');
+      window.print();
+      setTimeout(() => {
+        printArea.classList.add('hidden');
+      }, 500);
+    }
+
+    /* MODULE 8 & 9: MASTER DATA & SETTINGS */
+    function renderMasterDataModule(container) {
+      const tabs = [
+        { id: 'barges', label: 'Barges', icon: 'ship' },
+        { id: 'shippingLines', label: 'Shipping Lines', icon: 'anchor' },
+        { id: 'jetties', label: 'Jetties', icon: 'navigation' },
+        { id: 'stockpiles', label: 'Stockpiles', icon: 'layers' },
+        { id: 'surveyors', label: 'Surveyors', icon: 'microscope' },
+        { id: 'templates', label: 'Contract Templates', icon: 'file-text' },
+        { id: 'users', label: 'Users & Roles', icon: 'users' }
+      ];
+
+      container.innerHTML = `
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+          <div class="flex border-b border-slate-200 overflow-x-auto">
+            ${tabs.map(t => `
+              <button onclick="switchMasterTab('${t.id}')" 
+                class="px-4 py-2.5 text-xs font-bold flex items-center gap-2 border-b-2 transition-colors shrink-0 ${
+                  appState.activeMasterTab === t.id 
+                    ? 'border-brand-600 text-brand-600' 
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }">
+                <i data-lucide="${t.icon}" class="w-4 h-4"></i> ${t.label}
+              </button>
+            `).join('')}
+          </div>
+          <div id="master-tab-content">
+            ${renderMasterTabContent()}
+          </div>
+        </div>
+      `;
+    }
+
+    function switchMasterTab(tabId) {
+      appState.activeMasterTab = tabId;
+      renderActiveModule();
+    }
+
+    function renderMasterTabContent() {
+      const tab = appState.activeMasterTab;
+      const list = appState.masterData[tab] || [];
+
+      return `
+        <div class="flex justify-between items-center mb-4 text-xs">
+          <h4 class="font-bold text-slate-900">${tab.toUpperCase()} Master Data Registry (${list.length})</h4>
+          <button onclick="openAddMasterItemModal('${tab}')" class="px-3 py-1.5 bg-brand-600 text-white rounded-lg font-semibold">+ Add ${tab.slice(0, -1)}</button>
+        </div>
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 uppercase text-[10px] font-bold border-b">
+            <tr><th class="p-3">Code</th><th class="p-3">Name / Identifier</th><th class="p-3">Details</th><th class="p-3 text-right">Actions</th></tr>
+          </thead>
+          <tbody class="divide-y">
+            ${list.map((item, idx) => `
+              <tr>
+                <td class="p-3 font-bold text-brand-600">${item.code || 'REF'}</td>
+                <td class="p-3 font-bold text-slate-900">${item.name || item.title}</td>
+                <td class="p-3 text-slate-600">${item.owner || item.contactPerson || item.certType || item.paymentTerms || item.role || item.location || '-'}</td>
+                <td class="p-3 text-right space-x-1">
+                  <button onclick="editMasterItem('${tab}', ${idx})" class="px-2 py-1 bg-slate-100 rounded font-semibold text-slate-700">Edit</button>
+                  <button onclick="deleteMasterItem('${tab}', ${idx})" class="px-2 py-1 bg-red-50 text-red-600 rounded font-semibold">Delete</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function openAddMasterItemModal(type) {
+      openModal(`Add New ${type.toUpperCase()}`, `
+        <form class="space-y-3 text-xs">
+          <div><label class="font-bold block mb-1">Code</label><input type="text" id="m-code" value="REF-001" class="w-full p-2 border rounded-xl"></div>
+          <div><label class="font-bold block mb-1">Name</label><input type="text" id="m-name" placeholder="Enter name..." class="w-full p-2 border rounded-xl"></div>
+        </form>
+      `, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-xs">Cancel</button><button onclick="submitAddMasterItem('${type}')" class="px-4 py-2 bg-brand-600 text-white text-xs">Save</button>`);
+    }
+
+    function submitAddMasterItem(type) {
+      if (!appState.masterData[type]) appState.masterData[type] = [];
+      appState.masterData[type].unshift({
+        id: "m-" + Date.now(),
+        code: document.getElementById('m-code').value,
+        name: document.getElementById('m-name').value
+      });
+      closeModal();
+      renderActiveModule();
+    }
+
+    function editMasterItem(type, idx) {
+      const item = appState.masterData[type][idx];
+      openModal(`Edit ${item.name}`, `<form class="text-xs"><input type="text" id="m-edit-name" value="${item.name}" class="w-full p-2 border rounded-xl"></form>`, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-xs">Cancel</button><button onclick="submitEditMasterItem('${type}', ${idx})" class="px-4 py-2 bg-brand-600 text-white text-xs">Update</button>`);
+    }
+
+    function submitEditMasterItem(type, idx) {
+      appState.masterData[type][idx].name = document.getElementById('m-edit-name').value;
+      closeModal();
+      renderActiveModule();
+    }
+
+    function deleteMasterItem(type, idx) {
+      if (confirm("Delete item?")) {
+        appState.masterData[type].splice(idx, 1);
+        renderActiveModule();
+      }
+    }
+
+    function renderSettingsModule(container) {
+      const tabs = [
+        { id: 'profile', label: 'Company Profile & Banks', icon: 'building' },
+        { id: 'numbering', label: 'Numbering Schemes', icon: 'hash' },
+        { id: 'hpm', label: 'HPM & Pricing Rules', icon: 'calculator' },
+        { id: 'terms', label: 'Payment Terms', icon: 'receipt' },
+        { id: 'notifications', label: 'Notifications & Alerts', icon: 'bell' },
+        { id: 'rbac', label: 'RBAC Permission Matrix', icon: 'shield-check' },
+        { id: 'backup', label: 'Backup & Database', icon: 'hard-drive' }
+      ];
+
+      container.innerHTML = `
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+          <div class="flex border-b border-slate-200 overflow-x-auto">
+            ${tabs.map(t => `
+              <button onclick="switchSettingsTab('${t.id}')" 
+                class="px-4 py-2.5 text-xs font-bold flex items-center gap-2 border-b-2 transition-colors shrink-0 ${
+                  appState.activeSettingsTab === t.id 
+                    ? 'border-brand-600 text-brand-600' 
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }">
+                <i data-lucide="${t.icon}" class="w-4 h-4"></i> ${t.label}
+              </button>
+            `).join('')}
+          </div>
+          <div id="settings-tab-content">
+            ${renderSettingsTabContent()}
+          </div>
+        </div>
+      `;
+    }
+
+    function switchSettingsTab(tabId) {
+      appState.activeSettingsTab = tabId;
+      renderActiveModule();
+    }
+
+    function renderSettingsTabContent() {
+      const tab = appState.activeSettingsTab;
+
+      if (tab === 'profile') {
+        return `
+          <div class="space-y-4 text-xs">
+            <h4 class="font-bold text-slate-900 text-sm">Company Profile & Escrow Bank Accounts</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label class="font-bold block mb-1">Company Name</label><input type="text" id="cfg-comp-name" value="${appState.company.name || ''}" class="w-full p-2 border rounded-xl"></div>
+              <div><label class="font-bold block mb-1">Tax ID / NPWP</label><input type="text" id="cfg-comp-tax" value="${appState.company.taxId || ''}" class="w-full p-2 border rounded-xl"></div>
+            </div>
+            <button onclick="alert('Profile updated')" class="px-4 py-2 bg-brand-600 text-white rounded-xl font-bold">Save Settings</button>
+          </div>
+        `;
+      }
+
+      if (tab === 'backup') {
+        const currentWebAppUrl = getGasWebAppUrl();
+        return `
+          <div class="space-y-6 text-xs">
+            <h4 class="font-bold text-slate-900 text-sm">Backup & Database Management</h4>
+
+            <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3">
+              <h5 class="font-bold text-indigo-900 mb-1">🌐 Deployed Web App API URL (Live Server Bridge)</h5>
+              <p class="text-indigo-700 text-[11px]">URL Web App Apps Script yang digunakan untuk komunikasi data langsung saat menjalankan HTML ini di luar Apps Script (misalnya via Live Server / localhost).</p>
+              
+              <div class="space-y-1">
+                <label class="block text-[11px] font-semibold text-indigo-900">Apps Script Web App Endpoint URL:</label>
+                <div class="flex gap-2">
+                  <input type="text" id="input-webapp-url" value="${currentWebAppUrl}" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 px-3 py-1.5 border border-indigo-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                  <button onclick="saveCustomWebAppUrl()" class="px-4 py-1.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg font-bold transition-all text-xs whitespace-nowrap">💾 Save URL</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
+              <h5 class="font-bold text-blue-800 mb-1">⚙️ Setup Google Sheets Database</h5>
+              <p class="text-blue-700 text-[11px]">Jalankan untuk membuat & menginisialisasi semua tab Sheet (Contracts, Customers, Shipments, Invoices, Payments, Master Data, dll) dengan header kolom yang sudah dikonfigurasi dan data awal.</p>
+              
+              <div class="space-y-1">
+                <label class="block text-[11px] font-semibold text-blue-900">Custom Google Spreadsheet URL / ID (Opsional):</label>
+                <div class="flex gap-2">
+                  <input type="text" id="input-spreadsheet-url" placeholder="https://docs.google.com/spreadsheets/d/1ABC.../edit" class="flex-1 px-3 py-1.5 border border-blue-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                  <button id="btn-setup-db" onclick="runSetupDatabase()" class="px-4 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg font-bold transition-all text-xs whitespace-nowrap">⚙️ Setup / Connect Database</button>
+                </div>
+                <p class="text-[10px] text-blue-600">Kosongkan jika Apps Script sudah terhubung langsung ke Google Sheet aktif (Container-Bound).</p>
+              </div>
+
+              <div class="pt-2 border-t border-blue-200 flex items-center justify-between">
+                <div>
+                  <h6 class="font-bold text-blue-900 text-xs">🔄 Populate / Reset Data Sampel</h6>
+                  <p class="text-[10px] text-blue-700">Isi ulang data sampel awal ke seluruh tab Google Sheets jika data di sheet kosong.</p>
+                </div>
+                <button id="btn-reseed-db" onclick="runReseedDatabase()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-all text-xs whitespace-nowrap">🔄 Reseed Sample Data</button>
+              </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <h5 class="font-bold text-slate-800 mb-1">💾 JSON Backup (Local)</h5>
+              <p class="text-slate-600 mb-3 text-[11px]">Download seluruh data appState saat ini sebagai file JSON untuk backup lokal.</p>
+              <button onclick="downloadJsonBackup()" class="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold">Download JSON Database Backup</button>
+            </div>
+
+            <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <h5 class="font-bold text-emerald-800 mb-1">🔄 Sync Status</h5>
+              <div class="space-y-1 text-[11px] text-emerald-700">
+                <p>✅ <strong>getInitialData()</strong> — Membaca semua data dari Google Sheets (auto-fallback ke static data jika belum di-setup)</p>
+                <p>✅ <strong>saveContract()</strong> — Simpan/update baris di tab Contracts</p>
+                <p>✅ <strong>saveCustomer()</strong> — Simpan/update baris di tab Customers</p>
+                <p>✅ <strong>saveShipment()</strong> — Simpan/update baris di tab Shipments</p>
+                <p>✅ <strong>saveInvoice()</strong> — Simpan/update baris di tab Invoices</p>
+                <p>✅ <strong>savePayment()</strong> — Simpan baris + auto-update outstanding invoice</p>
+                <p>✅ <strong>saveMasterData(type, data)</strong> — CRUD Master Data (Barges, Jetties, dll)</p>
+                <p>✅ <strong>setupDatabase()</strong> — Inisialisasi semua tab + seed data awal</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      return `<div class="p-4 text-xs text-slate-600">Settings configuration panel for ${tab} active.</div>`;
+    }
+
+    function saveCustomWebAppUrl() {
+      const input = document.getElementById('input-webapp-url');
+      if (input && input.value.trim().length > 10) {
+        setGasWebAppUrl(input.value.trim());
+        alert('✅ Web App Endpoint URL berhasil disimpan!\n\nURL: ' + input.value.trim());
+        loadAppData();
+      } else {
+        alert('❌ Masukkan URL Google Apps Script Web App yang valid (contoh: https://script.google.com/macros/s/.../exec)');
+      }
+    }
+
+    function downloadJsonBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "SSU_ERP_Database_Backup_" + new Date().toISOString().split('T')[0] + ".json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function runSetupDatabase() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        const btn = document.getElementById('btn-setup-db');
+        const inputUrl = document.getElementById('input-spreadsheet-url');
+        const customUrlOrId = inputUrl ? inputUrl.value.trim() : '';
+
+        if (btn) { btn.disabled = true; btn.innerText = 'Setting up...'; }
+
+        const handleSuccess = res => {
+          if (btn) { btn.disabled = false; btn.innerText = '⚙️ Setup / Connect Database'; }
+          if (res && res.status === 'success') {
+            alert('✅ Database setup successfully completed!\n\nSpreadsheet URL:\n' + (res.url || 'Active Sheet') + '\n\nTabs Created: ' + (res.created.length > 0 ? res.created.join(', ') : 'None (All existed)') + '\nExisting Tabs: ' + (res.existing || []).join(', '));
+            loadAppData();
+          } else {
+            alert('❌ Setup failed: ' + (res ? res.message : 'Unknown error'));
+          }
+        };
+
+        const handleFailure = err => {
+          if (btn) { btn.disabled = false; btn.innerText = '⚙️ Setup / Connect Database'; }
+          alert('❌ Setup failed (Google Apps Script Error): ' + err);
+        };
+
+        if (customUrlOrId) {
+          google.script.run
+            .withSuccessHandler(handleSuccess)
+            .withFailureHandler(handleFailure)
+            .setSpreadsheetUrlOrId(customUrlOrId);
+        } else {
+          google.script.run
+            .withSuccessHandler(handleSuccess)
+            .withFailureHandler(handleFailure)
+            .setupDatabase();
+        }
+      } else {
+        alert('ℹ️ Setup Database hanya dapat dijalankan di Google Apps Script (tidak di local dev mode).');
+      }
+    }
+
+    function runReseedDatabase() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        if (!confirm('Apakah Anda yakin ingin mengisi ulang data sampel ke seluruh tab Google Sheets?')) return;
+        const btn = document.getElementById('btn-reseed-db');
+        if (btn) { btn.disabled = true; btn.innerText = 'Reseeding...'; }
+        google.script.run
+          .withSuccessHandler(res => {
+            if (btn) { btn.disabled = false; btn.innerText = '🔄 Reseed Sample Data'; }
+            if (res && res.status === 'success') {
+              alert('✅ ' + (res.message || 'Berhasil mengisi data sampel ke Google Sheets!'));
+              loadAppData();
+            } else {
+              alert('❌ Reseed failed: ' + (res ? res.message : 'Unknown error'));
+            }
+          })
+          .withFailureHandler(err => {
+            if (btn) { btn.disabled = false; btn.innerText = '🔄 Reseed Sample Data'; }
+            alert('❌ Reseed failed: ' + err);
+          })
+          .reseedDatabase();
+      } else {
+        alert('ℹ️ Fitur ini hanya dapat dijalankan di Google Apps Script.');
+      }
+    }
+
+    /* UTILITY MODALS & HELPERS */
+    function openModal(title, bodyHTML, footerHTML) {
+      document.getElementById('modal-title').innerText = title;
+      document.getElementById('modal-body').innerHTML = bodyHTML;
+      document.getElementById('modal-footer').innerHTML = footerHTML;
+
+      const backdrop = document.getElementById('modal-backdrop');
+      const box = document.getElementById('modal-box');
+      backdrop.classList.remove('hidden');
+      setTimeout(() => {
+        box.classList.remove('scale-95', 'opacity-0');
+        box.classList.add('scale-100', 'opacity-100');
+      }, 10);
+      lucide.createIcons();
+    }
+
+    function closeModal() {
+      const backdrop = document.getElementById('modal-backdrop');
+      const box = document.getElementById('modal-box');
+      box.classList.remove('scale-100', 'opacity-100');
+      box.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => { backdrop.classList.add('hidden'); }, 200);
+    }
+
+    function previewDocument(title, details) {
+      document.getElementById('doc-preview-title').innerText = title;
+      document.getElementById('doc-preview-body').innerHTML = `<p class="text-xs">${details}</p>`;
+      document.getElementById('doc-preview-backdrop').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDocPreview() {
+      document.getElementById('doc-preview-backdrop').classList.add('hidden');
+    }
+
+    function openSchemaModal() {
+      openModal("PostgreSQL ERD Schema", `<pre class="p-4 bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto">${appState.schemaSQL}</pre>`, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white text-xs">Close</button>`);
+    }
+
+    function getShipmentStatusBadge(status) {
+      switch (status) {
+        case 'Completed': return 'bg-emerald-500/10 text-emerald-600';
+        case 'Sailing': return 'bg-blue-500/10 text-blue-600';
+        case 'Loading': return 'bg-amber-500/10 text-amber-600';
+        default: return 'bg-slate-200 text-slate-700';
+      }
+    }
+
+    function getInvoiceStatusBadge(status) {
+      switch (status) {
+        case 'Paid': return 'bg-emerald-500/10 text-emerald-600';
+        case 'Partial': return 'bg-amber-500/10 text-amber-600';
+        case 'Unpaid': return 'bg-red-500/10 text-red-600';
+        default: return 'bg-slate-200 text-slate-700';
+      }
+    }
+
+    function exportToCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,Contract Number,Customer,Volume (WMT),Status\n";
+      appState.contracts.forEach(c => {
+        csvContent += `"${c.contractNumber}","${c.customerName}",${c.targetVolume},"${c.status}"\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "SSU_Contract_Report.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function getFallbackMockData() {
+      return {
+        status: 'success',
+        company: { name: "PT Surya Saga Utama", email: "contract.admin@suryasagautama.com", address: "Jakarta & Konawe, Indonesia", taxId: "01.234.567.8-015.000" },
+        contracts: [
+          { id: "cnt-001", contractNumber: "SSU/CTR/2026/001", customerId: "cust-001", customerName: "PT Tsingshan Steel Indonesia", contractType: "Spot Contract", incoterm: "FOB", targetVolume: 150000, hpmBase25: 46.50, deposit: 500000, status: "Active", niSpec: 1.80 },
+          { id: "cnt-002", contractNumber: "SSU/CTR/2026/002", customerId: "cust-002", customerName: "PT Virtue Dragon Nickel Industry", contractType: "Long-Term Agreement", incoterm: "CIF", targetVolume: 300000, hpmBase25: 48.20, deposit: 1200000, status: "Active", niSpec: 1.90 }
+        ],
+        customers: [
+          { id: "cust-001", code: "TSI", name: "PT Tsingshan Steel Indonesia", contactPerson: "Mr. Lin Wei", email: "procurement@tsingshan.co.id", phone: "+62 21 2988 1234", address: "Morowali Industrial Park (IMIP)", taxId: "01.889.231.4-012.000", totalContracts: 3, totalVolumeDelivered: 450000, outstandingUSD: 142000, status: "Active" },
+          { id: "cust-002", code: "VDNI", name: "PT Virtue Dragon Nickel Industry", contactPerson: "Bpk. Hendra Wijaya", email: "nickel.supply@vdni.co.id", phone: "+62 401 319 8899", address: "Konawe Industrial Estate", taxId: "02.551.442.1-014.000", totalContracts: 2, totalVolumeDelivered: 280000, outstandingUSD: 385000, status: "Active" }
+        ],
+        shipments: [
+          { id: "shp-2026-001", shipmentNumber: "SHP/SSU/2026/001", contractId: "cnt-001", contractNumber: "SSU/CTR/2026/001", customerId: "cust-001", customerName: "PT Tsingshan Steel Indonesia", bargeName: "BG. Royal 3001 / TB. Trans Power", surveyor: "PT Carsurin Tbk", targetQuantity: 8000, actualQuantity: 8150, status: "Completed", workflowStep: 10, niContent: 1.83, moistureContent: 31.0, documents: {} }
+        ],
+        invoices: [
+          { id: "inv-2026-001", invoiceNumber: "INV/SSU/2026/001", shipmentNumber: "SHP/SSU/2026/001", contractNumber: "SSU/CTR/2026/001", customerName: "PT Tsingshan Steel Indonesia", invoiceDate: "2026-07-20", dueDate: "2026-08-03", quantityWMT: 8150, adjustedUnitPriceUSD: 47.28, hpmTotalUSD: 385332.00, grandTotalUSD: 429048.60, paidAmountUSD: 429048.60, outstandingUSD: 0, status: "Paid" }
+        ],
+        payments: [
+          { id: "pmt-001", paymentNumber: "PAY/SSU/2026/001", invoiceNumber: "INV/SSU/2026/001", customerName: "PT Tsingshan Steel Indonesia", paymentDate: "2026-07-22", bankName: "Bank Mandiri (USD Escrow)", referenceNo: "TRX-MND-99214812", amountUSD: 429048.60, status: "Approved" }
+        ],
+        masterData: {
+          barges: [{ code: "BG-3001", name: "BG. Royal 3001", capacity: 8000, owner: "PT Royal Maritime" }],
+          shippingLines: [{ code: "OML", name: "PT Oceanic Maritime Lines", contactPerson: "Capt. Rian Hidayat", email: "ops@oceanic.co.id", phone: "+62 21 8890 123", fleetCount: 14 }],
+          jetties: [{ code: "JTY-01", name: "Jetty SSU Main Port 01", location: "Konawe Mining Area", draftDepth: 9.5, maxCapacityWMT: 12000 }],
+          stockpiles: [{ code: "SP-01", name: "Stockpile 01 (High Grade)", capacity: 50000, currentVol: 23200, minNi: 1.80 }],
+          surveyors: [{ code: "CAR", name: "PT Carsurin Tbk", certType: "CoW & CoA Recognized" }],
+          templates: [{ code: "TPL-FOB", name: "FOB Spot Nickel Sales Template", incoterm: "FOB", paymentTerms: "30% Advance Deposit, 70% LC at Sight" }],
+          users: [{ name: "Budi Santoso", email: "budi.santoso@suryasagautama.com", role: "Administrator", department: "IT & Executive" }]
+        },
+        settings: {
+          numberingFormat: { contractPrefix: "SSU/CTR/{YYYY}/", shipmentPrefix: "SHP/SSU/{YYYY}/", invoicePrefix: "INV/SSU/{YYYY}/", paymentPrefix: "PAY/SSU/{YYYY}/" },
+          hpmFormula: { lmeBasePriceUSD: 16500, correctionFactor: 0.25, royaltyTaxPercent: 5.0 },
+          rbacMatrix: [
+            { module: "Contract Management", admin: true, finance: true, operation: true, management: true, viewer: false }
+          ]
+        },
+        schemaSQL: `-- SUPABASE DDL\nCREATE TABLE contracts (...);`
+      };
+    }
+  </script>
+</body>
+</html>
