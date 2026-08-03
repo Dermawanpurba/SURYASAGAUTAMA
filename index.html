@@ -385,8 +385,43 @@
       }
     }
 
+    function saveLocalAppState() {
+      try {
+        localStorage.setItem('SSU_ERP_LOCAL_APP_STATE', JSON.stringify({
+          company: appState.company,
+          contracts: appState.contracts,
+          customers: appState.customers,
+          shipments: appState.shipments,
+          invoices: appState.invoices,
+          payments: appState.payments,
+          masterData: appState.masterData,
+          settings: appState.settings
+        }));
+      } catch (err) {
+        console.warn("Failed to save local state:", err);
+      }
+    }
+
+    function loadLocalAppState() {
+      try {
+        const saved = localStorage.getItem('SSU_ERP_LOCAL_APP_STATE');
+        if (saved) return JSON.parse(saved);
+      } catch (err) {}
+      return null;
+    }
+
+    function mergeArraysById(primaryArr, fallbackArr) {
+      primaryArr = Array.isArray(primaryArr) ? primaryArr : [];
+      fallbackArr = Array.isArray(fallbackArr) ? fallbackArr : [];
+      const map = new Map();
+      primaryArr.forEach(item => { if (item && item.id) map.set(item.id, item); });
+      fallbackArr.forEach(item => { if (item && item.id && !map.has(item.id)) map.set(item.id, item); });
+      return Array.from(map.values());
+    }
+
     /* Generic RPC helper — calls GAS backend natively or via Live Server HTTP Bridge */
     function rpcCall(methodName, payload, onSuccess, onError) {
+      saveLocalAppState();
       setSyncStatus('syncing', 'Menyimpan ke Google Sheets...');
 
       // 1. Native GAS runtime
@@ -398,8 +433,8 @@
               console.error('[RPC Error]', methodName, res.message);
               if (onError) onError(res.message);
             } else {
+              saveLocalAppState();
               if (onSuccess) onSuccess(res);
-              loadAppData();
             }
           })
           .withFailureHandler(err => {
@@ -421,13 +456,14 @@
               console.error('[RPC Error]', methodName, res.message);
               if (onError) onError(res.message);
             } else {
+              saveLocalAppState();
               if (onSuccess) onSuccess(res);
-              loadAppData();
             }
           })
           .catch(err => {
-            console.error('[Live Server RPC Error]', err);
-            setSyncStatus('fallback', 'Local Dev Mode');
+            console.warn('[Live Server RPC Warning] Saved to local storage, backend sync warning:', err);
+            setSyncStatus('fallback', 'Local Saved (Offline)');
+            saveLocalAppState();
             if (onSuccess) onSuccess({ status: 'success', id: payload ? payload.id : null });
           });
       }
@@ -435,9 +471,36 @@
 
     function onDataLoaded(data) {
       appState.dataLoadedSuccessfully = true;
+
+      const localSaved = loadLocalAppState();
+
       if (!data || data.status !== 'success') {
-        data = getFallbackMockData();
+        const fallback = getFallbackMockData();
+        if (localSaved) {
+          data = {
+            status: 'success',
+            company: localSaved.company || fallback.company,
+            contracts: mergeArraysById(localSaved.contracts, fallback.contracts),
+            customers: mergeArraysById(localSaved.customers, fallback.customers),
+            shipments: mergeArraysById(localSaved.shipments, fallback.shipments),
+            invoices: mergeArraysById(localSaved.invoices, fallback.invoices),
+            payments: mergeArraysById(localSaved.payments, fallback.payments),
+            masterData: localSaved.masterData || fallback.masterData,
+            settings: localSaved.settings || fallback.settings,
+            schemaSQL: fallback.schemaSQL
+          };
+        } else {
+          data = fallback;
+        }
+      } else if (localSaved) {
+        // Merge any newly added items from local state if Google Sheets didn't return them yet
+        data.contracts = mergeArraysById(data.contracts, localSaved.contracts);
+        data.customers = mergeArraysById(data.customers, localSaved.customers);
+        data.shipments = mergeArraysById(data.shipments, localSaved.shipments);
+        data.invoices = mergeArraysById(data.invoices, localSaved.invoices);
+        data.payments = mergeArraysById(data.payments, localSaved.payments);
       }
+
       appState.company = data.company || {};
       appState.contracts = data.contracts || [];
       appState.customers = data.customers || [];
@@ -447,6 +510,8 @@
       appState.masterData = data.masterData || {};
       appState.settings = data.settings || {};
       appState.schemaSQL = data.schemaSQL || '';
+
+      saveLocalAppState();
 
       try {
         renderActiveModule();
