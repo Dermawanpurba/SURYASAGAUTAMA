@@ -347,8 +347,24 @@
       } 
       // 2. Running outside Apps Script (Live Server / Localhost / Direct HTML)
       else {
-        // INSTANT 0ms LOAD FOR LIVE SERVER / LOCALHOST:
-        onDataLoaded(getFallbackMockData());
+        // INSTANT LOAD: Prioritize user's saved LocalStorage data if present
+        const localSaved = loadLocalAppState();
+        if (localSaved) {
+          onDataLoaded({
+            status: 'success',
+            isMockData: true,
+            company: localSaved.company,
+            contracts: localSaved.contracts,
+            customers: localSaved.customers,
+            shipments: localSaved.shipments,
+            invoices: localSaved.invoices,
+            payments: localSaved.payments,
+            masterData: localSaved.masterData,
+            settings: localSaved.settings
+          });
+        } else {
+          onDataLoaded(getFallbackMockData());
+        }
         setSyncStatus('fallback', 'Live Server (Fast Mode)');
 
         // Background API sync if user saved a custom WebApp URL
@@ -366,13 +382,14 @@
               if (fetchTimer) clearTimeout(fetchTimer);
               if (data && data.status === 'success') {
                 appState.company = data.company || appState.company;
-                appState.contracts = data.contracts || appState.contracts;
-                appState.customers = data.customers || appState.customers;
-                appState.shipments = data.shipments || appState.shipments;
-                appState.invoices = data.invoices || appState.invoices;
-                appState.payments = data.payments || appState.payments;
+                appState.contracts = mergeArraysById(appState.contracts, data.contracts || []);
+                appState.customers = mergeArraysById(appState.customers, data.customers || []);
+                appState.shipments = mergeArraysById(appState.shipments, data.shipments || []);
+                appState.invoices = mergeArraysById(appState.invoices, data.invoices || []);
+                appState.payments = mergeArraysById(appState.payments, data.payments || []);
                 appState.masterData = data.masterData || appState.masterData;
                 appState.settings = data.settings || appState.settings;
+                saveLocalAppState();
                 renderActiveModule();
                 setSyncStatus('synced', 'Live Server API Bridge');
               }
@@ -461,7 +478,7 @@
             }
           })
           .catch(err => {
-            console.warn('[Live Server RPC Warning] Saved to local storage, backend sync warning:', err);
+            console.warn('[Live Server RPC Warning] Saved locally, backend sync warning:', err);
             setSyncStatus('fallback', 'Local Saved (Offline)');
             saveLocalAppState();
             if (onSuccess) onSuccess({ status: 'success', id: payload ? payload.id : null });
@@ -473,9 +490,9 @@
       appState.dataLoadedSuccessfully = true;
 
       const localSaved = loadLocalAppState();
+      const fallback = getFallbackMockData();
 
-      if (!data || data.status !== 'success') {
-        const fallback = getFallbackMockData();
+      if (!data || data.status !== 'success' || data.isMockData) {
         if (localSaved) {
           data = {
             status: 'success',
@@ -493,12 +510,12 @@
           data = fallback;
         }
       } else if (localSaved) {
-        // Merge any newly added items from local state if Google Sheets didn't return them yet
-        data.contracts = mergeArraysById(data.contracts, localSaved.contracts);
-        data.customers = mergeArraysById(data.customers, localSaved.customers);
-        data.shipments = mergeArraysById(data.shipments, localSaved.shipments);
-        data.invoices = mergeArraysById(data.invoices, localSaved.invoices);
-        data.payments = mergeArraysById(data.payments, localSaved.payments);
+        // Merge remote Google Sheets data with user's local additions (localSaved FIRST)
+        data.contracts = mergeArraysById(localSaved.contracts, data.contracts);
+        data.customers = mergeArraysById(localSaved.customers, data.customers);
+        data.shipments = mergeArraysById(localSaved.shipments, data.shipments);
+        data.invoices = mergeArraysById(localSaved.invoices, data.invoices);
+        data.payments = mergeArraysById(localSaved.payments, data.payments);
       }
 
       appState.company = data.company || {};
@@ -2584,6 +2601,7 @@
     function getFallbackMockData() {
       return {
         status: 'success',
+        isMockData: true,
         company: { name: "PT Surya Saga Utama", email: "contract.admin@suryasagautama.com", address: "Jakarta & Konawe, Indonesia", taxId: "01.234.567.8-015.000" },
         contracts: [
           { id: "cnt-001", contractNumber: "SSU/CTR/2026/001", customerId: "cust-001", customerName: "PT Tsingshan Steel Indonesia", contractType: "Spot Contract", incoterm: "FOB", targetVolume: 150000, hpmBase25: 46.50, deposit: 500000, status: "Active", niSpec: 1.80 },
