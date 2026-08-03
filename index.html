@@ -211,15 +211,20 @@
       SSU
     </div>
     <h3 class="text-lg font-bold tracking-wide mb-1">PT Surya Saga Utama - Nickel ERP</h3>
-    <div class="flex items-center gap-2 text-xs text-slate-300 mb-6">
+    <div class="flex items-center gap-2 text-xs text-slate-300 mb-4">
       <svg class="animate-spin h-4 w-4 text-brand-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
       <span id="sync-loader-text">Menyinkronkan & Membaca Data Google Sheets...</span>
     </div>
-    <div class="w-64 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+    <div class="w-64 bg-slate-800 rounded-full h-1.5 overflow-hidden mb-4">
       <div class="bg-brand-500 h-1.5 rounded-full animate-pulse w-full"></div>
+    </div>
+    <div class="flex flex-col items-center gap-2">
+      <button onclick="dismissSyncLoader()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 font-semibold rounded-xl border border-slate-700 hover:border-amber-500/50 shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+        <i data-lucide="play-circle" class="w-4 h-4 text-amber-400"></i> Buka Aplikasi (Mode Standalone / Offline Fast Mode)
+      </button>
     </div>
   </div>
 
@@ -256,38 +261,19 @@
       { id: 'settings', label: 'Settings', icon: 'settings' }
     ];
 
-    /* INITIALIZATION */
-    document.addEventListener('DOMContentLoaded', () => {
-      renderSidebar();
-      setupEventListeners();
-      loadAppData();
-    });
+    function safeLucideCreateIcons() {
+      if (typeof lucide !== 'undefined' && lucide && typeof lucide.createIcons === 'function') {
+        try { lucide.createIcons(); } catch(e){}
+      }
+    }
 
-    function setSyncStatus(status, text) {
+    function hideSyncLoader() {
       const loader = document.getElementById('initial-sync-loader');
-      const loaderText = document.getElementById('sync-loader-text');
-      const badge = document.getElementById('sync-badge');
-
-      if (status === 'syncing') {
-        if (loaderText) loaderText.innerText = text;
-        if (badge) {
-          badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-xs font-semibold animate-pulse';
-          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span><span>${text}</span>`;
-        }
-      } else {
-        if (loader) {
-          loader.classList.add('opacity-0', 'pointer-events-none');
-          setTimeout(() => { loader.style.display = 'none'; }, 300);
-        }
-        if (badge) {
-          if (status === 'synced') {
-            badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-semibold';
-            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>🟢 Live Synced with Google Sheets</span>`;
-          } else {
-            badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-slate-100 border border-slate-200 text-slate-600 rounded-full text-xs font-semibold';
-            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span><span>🟡 ${text}</span>`;
-          }
-        }
+      if (loader) {
+        loader.style.display = 'none';
+        loader.style.visibility = 'hidden';
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
       }
     }
 
@@ -304,9 +290,12 @@
     }
 
     function setSyncStatus(status, text) {
-      const loader = document.getElementById('initial-sync-loader');
       const loaderText = document.getElementById('sync-loader-text');
       const badge = document.getElementById('sync-badge');
+
+      if (status !== 'syncing') {
+        hideSyncLoader();
+      }
 
       if (status === 'syncing') {
         if (loaderText) loaderText.innerText = text;
@@ -315,10 +304,6 @@
           badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span><span>${text}</span>`;
         }
       } else {
-        if (loader) {
-          loader.classList.add('opacity-0', 'pointer-events-none');
-          setTimeout(() => { loader.style.display = 'none'; }, 300);
-        }
         if (badge) {
           if (status === 'synced') {
             badge.className = 'hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-semibold';
@@ -331,17 +316,30 @@
       }
     }
 
-    function loadAppData() {
-      setSyncStatus('syncing', 'Menyinkronkan data Google Sheets...');
+    function dismissSyncLoader() {
+      onDataLoaded(getFallbackMockData());
+      setSyncStatus('fallback', 'Fast Mode Standalone');
+    }
 
-      // 1. Running inside Google Apps Script iframe environment
+    function loadAppData() {
+      // 1. Running inside Google Apps Script native iframe environment
       if (typeof google !== 'undefined' && google.script && google.script.run) {
+        setSyncStatus('syncing', 'Menyinkronkan data Google Sheets...');
+        const loadTimeout = setTimeout(() => {
+          if (!appState.dataLoadedSuccessfully) {
+            onDataLoaded(getFallbackMockData());
+            setSyncStatus('fallback', 'Apps Script Timeout (Fast Mode)');
+          }
+        }, 2000);
+
         google.script.run
           .withSuccessHandler(data => {
+            clearTimeout(loadTimeout);
             onDataLoaded(data);
             setSyncStatus('synced', 'Apps Script Native');
           })
           .withFailureHandler(err => {
+            clearTimeout(loadTimeout);
             onDataError(err);
             setSyncStatus('fallback', 'Offline / Fallback Data Mode');
           })
@@ -349,26 +347,41 @@
       } 
       // 2. Running outside Apps Script (Live Server / Localhost / Direct HTML)
       else {
-        const webAppUrl = getGasWebAppUrl();
-        const apiUrl = webAppUrl + (webAppUrl.includes('?') ? '&' : '?') + 'action=getInitialData&t=' + Date.now();
+        // INSTANT 0ms LOAD FOR LIVE SERVER / LOCALHOST:
+        onDataLoaded(getFallbackMockData());
+        setSyncStatus('fallback', 'Live Server (Fast Mode)');
 
-        fetch(apiUrl, { redirect: 'follow' })
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.status === 'success') {
-              onDataLoaded(data);
-              setSyncStatus('synced', 'Live Server API Bridge');
-            } else {
-              console.warn('[Live Server Bridge] API returned non-success:', data);
-              onDataLoaded(getFallbackMockData());
-              setSyncStatus('fallback', 'Live Server (Fallback Mock)');
-            }
-          })
-          .catch(err => {
-            console.error('[Live Server Bridge] Fetch error:', err);
-            onDataLoaded(getFallbackMockData());
-            setSyncStatus('fallback', 'Live Server (Offline Fallback)');
-          });
+        // Background API sync if user saved a custom WebApp URL
+        const webAppUrl = getGasWebAppUrl();
+        if (webAppUrl && webAppUrl.trim().length > 10) {
+          const apiUrl = webAppUrl + (webAppUrl.includes('?') ? '&' : '?') + 'action=getInitialData&t=' + Date.now();
+          const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const fetchOptions = { redirect: 'follow' };
+          if (controller) fetchOptions.signal = controller.signal;
+          const fetchTimer = controller ? setTimeout(() => controller.abort(), 2000) : null;
+
+          fetch(apiUrl, fetchOptions)
+            .then(res => res.json())
+            .then(data => {
+              if (fetchTimer) clearTimeout(fetchTimer);
+              if (data && data.status === 'success') {
+                appState.company = data.company || appState.company;
+                appState.contracts = data.contracts || appState.contracts;
+                appState.customers = data.customers || appState.customers;
+                appState.shipments = data.shipments || appState.shipments;
+                appState.invoices = data.invoices || appState.invoices;
+                appState.payments = data.payments || appState.payments;
+                appState.masterData = data.masterData || appState.masterData;
+                appState.settings = data.settings || appState.settings;
+                renderActiveModule();
+                setSyncStatus('synced', 'Live Server API Bridge');
+              }
+            })
+            .catch(err => {
+              if (fetchTimer) clearTimeout(fetchTimer);
+              console.warn('[Live Server Background Sync] Using local fast state:', err);
+            });
+        }
       }
     }
 
@@ -421,19 +434,26 @@
     }
 
     function onDataLoaded(data) {
-      if (data && data.status === 'success') {
-        appState.company = data.company || {};
-        appState.contracts = data.contracts || [];
-        appState.customers = data.customers || [];
-        appState.shipments = data.shipments || [];
-        appState.invoices = data.invoices || [];
-        appState.payments = data.payments || [];
-        appState.masterData = data.masterData || {};
-        appState.settings = data.settings || {};
-        appState.schemaSQL = data.schemaSQL || '';
-
-        renderActiveModule();
+      appState.dataLoadedSuccessfully = true;
+      if (!data || data.status !== 'success') {
+        data = getFallbackMockData();
       }
+      appState.company = data.company || {};
+      appState.contracts = data.contracts || [];
+      appState.customers = data.customers || [];
+      appState.shipments = data.shipments || [];
+      appState.invoices = data.invoices || [];
+      appState.payments = data.payments || [];
+      appState.masterData = data.masterData || {};
+      appState.settings = data.settings || {};
+      appState.schemaSQL = data.schemaSQL || '';
+
+      try {
+        renderActiveModule();
+      } catch (err) {
+        console.error("renderActiveModule error:", err);
+      }
+      hideSyncLoader();
     }
 
     function onDataError(err) {
@@ -455,7 +475,7 @@
         </button>
       `).join('');
 
-      lucide.createIcons();
+      safeLucideCreateIcons();
     }
 
     function switchMenu(menuId) {
@@ -529,7 +549,7 @@
           break;
       }
 
-      lucide.createIcons();
+      safeLucideCreateIcons();
     }
 
     /* MODULE 1: DASHBOARD */
@@ -675,45 +695,59 @@
     }
 
     function initDashboardCharts(paidUSD, outstandingUSD) {
-      const finOptions = {
-        series: [paidUSD, outstandingUSD],
-        labels: ['Payment Received', 'Outstanding'],
-        chart: { type: 'donut', height: 260, fontFamily: 'Plus Jakarta Sans' },
-        colors: ['#10b981', '#f59e0b'],
-        legend: { position: 'bottom' },
-        dataLabels: { enabled: true, formatter: (val) => val.toFixed(1) + '%' }
-      };
-      new ApexCharts(document.querySelector("#financial-summary-chart"), finOptions).render();
+      if (typeof ApexCharts === 'undefined') return;
+      try {
+        const finEl = document.querySelector("#financial-summary-chart");
+        if (finEl) {
+          finEl.innerHTML = '';
+          new ApexCharts(finEl, {
+            series: [paidUSD || 0, outstandingUSD || 0],
+            labels: ['Payment Received', 'Outstanding'],
+            chart: { type: 'donut', height: 260, fontFamily: 'Plus Jakarta Sans' },
+            colors: ['#10b981', '#f59e0b'],
+            legend: { position: 'bottom' },
+            dataLabels: { enabled: true, formatter: (val) => (val || 0).toFixed(1) + '%' }
+          }).render();
+        }
 
-      const contractNums = appState.contracts.map(c => c.contractNumber);
-      const targetVols = appState.contracts.map(c => c.targetVolume);
-      const deliveredVols = appState.contracts.map(c => c.deliveredVolume || 0);
-      const contractOptions = {
-        series: [
-          { name: 'Target Volume (WMT)', data: targetVols },
-          { name: 'Delivered Volume (WMT)', data: deliveredVols }
-        ],
-        chart: { type: 'bar', height: 260, fontFamily: 'Plus Jakarta Sans', toolbar: { show: false } },
-        colors: ['#2563eb', '#10b981'],
-        plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
-        xaxis: { categories: contractNums },
-        yaxis: { title: { text: 'Volume (WMT)' } }
-      };
-      new ApexCharts(document.querySelector("#contract-volume-chart"), contractOptions).render();
+        const contractNums = (appState.contracts || []).map(c => c.contractNumber || '');
+        const targetVols = (appState.contracts || []).map(c => c.targetVolume || 0);
+        const deliveredVols = (appState.contracts || []).map(c => c.deliveredVolume || 0);
+        const contractEl = document.querySelector("#contract-volume-chart");
+        if (contractEl) {
+          contractEl.innerHTML = '';
+          new ApexCharts(contractEl, {
+            series: [
+              { name: 'Target Volume (WMT)', data: targetVols },
+              { name: 'Delivered Volume (WMT)', data: deliveredVols }
+            ],
+            chart: { type: 'bar', height: 260, fontFamily: 'Plus Jakarta Sans', toolbar: { show: false } },
+            colors: ['#2563eb', '#10b981'],
+            plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
+            xaxis: { categories: contractNums },
+            yaxis: { title: { text: 'Volume (WMT)' } }
+          }).render();
+        }
 
-      const statusCounts = {
-        'Completed': appState.shipments.filter(s => s.status === 'Completed').length,
-        'Sailing': appState.shipments.filter(s => s.status === 'Sailing').length,
-        'Loading': appState.shipments.filter(s => s.status === 'Loading').length
-      };
-      const shipOptions = {
-        series: Object.values(statusCounts),
-        labels: Object.keys(statusCounts),
-        chart: { type: 'pie', height: 240, fontFamily: 'Plus Jakarta Sans' },
-        colors: ['#10b981', '#3b82f6', '#f59e0b'],
-        legend: { position: 'bottom' }
-      };
-      new ApexCharts(document.querySelector("#shipment-status-chart"), shipOptions).render();
+        const statusCounts = {
+          'Completed': (appState.shipments || []).filter(s => s.status === 'Completed').length,
+          'Sailing': (appState.shipments || []).filter(s => s.status === 'Sailing').length,
+          'Loading': (appState.shipments || []).filter(s => s.status === 'Loading').length
+        };
+        const shipEl = document.querySelector("#shipment-status-chart");
+        if (shipEl) {
+          shipEl.innerHTML = '';
+          new ApexCharts(shipEl, {
+            series: Object.values(statusCounts),
+            labels: Object.keys(statusCounts),
+            chart: { type: 'pie', height: 240, fontFamily: 'Plus Jakarta Sans' },
+            colors: ['#10b981', '#3b82f6', '#f59e0b'],
+            legend: { position: 'bottom' }
+          }).render();
+        }
+      } catch (err) {
+        console.warn('Dashboard chart error:', err);
+      }
     }
 
     /* MODULE 2: CONTRACT (WITH DIRECT PRINT REPORT BUTTON) */
@@ -943,7 +977,7 @@
       openModal(`Customer Account: ${c.name}`, `<p class="text-xs">Account details for ${c.name}</p>`, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl">Close</button>`);
     }
 
-    /* MODULE 4: SHIPMENT & LOGISTICS (WITH FULLY FUNCTIONAL INPUT DISPATCH FORM) */
+    /* MODULE 4: SHIPMENT & LOGISTICS (WITH FULLY FUNCTIONAL INPUT DISPATCH FORM & CONTRACTOR TRACKING) */
     function renderShipmentModule(container) {
       container.innerHTML = `
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
@@ -951,7 +985,10 @@
             <h3 class="text-sm font-bold text-slate-900">Shipment & Logistics Operations</h3>
             <p class="text-xs text-slate-500">Track barge loading, survey certifications, CoA Muat/Bongkar, PNBP & LHV verification</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="openTrackDocumentModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+              <i data-lucide="compass" class="w-4 h-4"></i> 🔍 Lacak Dokumen Contractor
+            </button>
             <button onclick="printModulePDF('shipment')" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
               <i data-lucide="printer" class="w-4 h-4"></i> Print Summary PDF
             </button>
@@ -962,7 +999,9 @@
         </div>
 
         <div class="grid grid-cols-1 gap-6">
-          ${appState.shipments.map(shp => `
+          ${appState.shipments.map((shp, idx) => {
+            const trkNo = shp.trackingNumber || ('TRK-SSU-2026-' + String(idx + 1).padStart(3, '0'));
+            return `
             <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
               <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div class="flex items-center gap-3">
@@ -970,19 +1009,27 @@
                     <i data-lucide="ship" class="w-5 h-5"></i>
                   </div>
                   <div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
                       <h4 class="text-sm font-extrabold text-slate-900">${shp.bargeName}</h4>
                       <span class="text-xs px-2 py-0.5 rounded bg-slate-100 font-bold text-slate-600">${shp.shipmentNumber}</span>
+                      <span onclick="copyTrackingNo('${trkNo}')" class="text-xs px-2.5 py-0.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-mono font-bold cursor-pointer transition-colors flex items-center gap-1" title="Klik untuk copy No Tracking Resi">
+                        <i data-lucide="qr-code" class="w-3.5 h-3.5 text-amber-600"></i>
+                        <span>${trkNo}</span>
+                        <i data-lucide="copy" class="w-3 h-3 text-amber-500 ml-0.5"></i>
+                      </span>
                     </div>
                     <p class="text-xs text-slate-500">${shp.customerName} | Contract: <strong>${shp.contractNumber}</strong></p>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                   <span class="badge ${getShipmentStatusBadge(shp.status)} text-xs px-3 py-1">${shp.status}</span>
+                  <button onclick="openTrackDocumentModal('${trkNo}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1">
+                    <i data-lucide="compass" class="w-3.5 h-3.5"></i> Track Dokumen
+                  </button>
                   <button onclick="viewShipmentDetail('${shp.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl">View Details & Docs</button>
                   <button onclick="printSingleBargePDF('${shp.id}')" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl flex items-center gap-1">
-                    <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Report Barge
+                    <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Report
                   </button>
                 </div>
               </div>
@@ -996,8 +1043,8 @@
                   ${renderWorkflowStepperSteps(shp.workflowStep)}
                 </div>
               </div>
-            </div>
-          `).join('')}
+            </div>`;
+          }).join('')}
         </div>
       `;
     }
@@ -1040,8 +1087,9 @@
 
       openModal(`Shipment Detail: ${shp.shipmentNumber}`, `
         <div class="space-y-4 text-xs">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
             <div><span class="text-slate-400 text-[10px] block">Vessel / Barge</span><strong class="text-slate-900">${shp.bargeName}</strong></div>
+            <div><span class="text-slate-400 text-[10px] block">No Tracking Resi</span><span class="font-mono font-bold text-amber-700 cursor-pointer flex items-center gap-1" onclick="copyTrackingNo('${shp.trackingNumber}')"><i data-lucide="qr-code" class="w-3 h-3 text-amber-600"></i> ${shp.trackingNumber || '-'}</span></div>
             <div><span class="text-slate-400 text-[10px] block">Customer Buyer</span><strong class="text-slate-900">${shp.customerName}</strong></div>
             <div><span class="text-slate-400 text-[10px] block">Contract Ref</span><strong class="text-brand-600">${shp.contractNumber}</strong></div>
             <div><span class="text-slate-400 text-[10px] block">Status</span><span class="badge ${getShipmentStatusBadge(shp.status)}">${shp.status}</span></div>
@@ -1074,9 +1122,14 @@
           <div class="pt-2 border-t border-slate-200">
             <div class="flex items-center justify-between mb-2">
               <span class="font-bold text-slate-700 block">Shipping Documents Checklist & Verification</span>
-              <button onclick="printSingleBargePDF('${shp.id}')" class="px-3 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg font-semibold text-[11px] flex items-center gap-1">
-                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Report Barge Ini
-              </button>
+              <div class="flex items-center gap-2">
+                <button onclick="openTrackDocumentModal('${shp.trackingNumber}')" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-[11px] flex items-center gap-1">
+                  <i data-lucide="compass" class="w-3.5 h-3.5"></i> Track Dokumen Portal
+                </button>
+                <button onclick="printSingleBargePDF('${shp.id}')" class="px-3 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg font-semibold text-[11px] flex items-center gap-1">
+                  <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Report Barge Ini
+                </button>
+              </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               ${docItems.map(d => `
@@ -1089,6 +1142,163 @@
           </div>
         </div>
       `, `<button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl">Close</button>`);
+    }
+
+    /* COPY TRACKING NO HELPER */
+    function copyTrackingNo(trkNo) {
+      if (!trkNo) return;
+      navigator.clipboard.writeText(trkNo).then(() => {
+        alert("✓ No Resi Tracking copied: " + trkNo);
+      }).catch(() => {
+        alert("No Tracking: " + trkNo);
+      });
+    }
+
+    /* CONTRACTOR DOCUMENT TRACKING PORTAL MODAL */
+    function openTrackDocumentModal(searchKey) {
+      const shipments = appState.shipments || [];
+      if (shipments.length === 0) {
+        alert("Belum ada data pengapalan tongkang di sistem.");
+        return;
+      }
+
+      let selectedShp = shipments[0];
+      if (searchKey) {
+        const found = shipments.find(s => 
+          (s.trackingNumber && s.trackingNumber.toLowerCase() === searchKey.toLowerCase()) ||
+          (s.shipmentNumber && s.shipmentNumber.toLowerCase() === searchKey.toLowerCase()) ||
+          (s.bargeName && s.bargeName.toLowerCase().includes(searchKey.toLowerCase())) ||
+          s.id === searchKey
+        );
+        if (found) selectedShp = found;
+      }
+
+      const optionsHtml = shipments.map(s => `
+        <option value="${s.id}" ${s.id === selectedShp.id ? 'selected' : ''}>
+          ${s.trackingNumber || s.shipmentNumber} - ${s.bargeName} (${s.shippingLine || 'Pelayaran'})
+        </option>
+      `).join('');
+
+      renderTrackDocumentBody(selectedShp, optionsHtml);
+    }
+
+    function onSelectTrackShipment(shpId) {
+      const selectedShp = (appState.shipments || []).find(s => s.id === shpId);
+      if (!selectedShp) return;
+      const optionsHtml = (appState.shipments || []).map(s => `
+        <option value="${s.id}" ${s.id === selectedShp.id ? 'selected' : ''}>
+          ${s.trackingNumber || s.shipmentNumber} - ${s.bargeName} (${s.shippingLine || 'Pelayaran'})
+        </option>
+      `).join('');
+      renderTrackDocumentBody(selectedShp, optionsHtml);
+    }
+
+    function renderTrackDocumentBody(shp, optionsHtml) {
+      const docs = shp.documents || {};
+      const currentStep = shp.workflowStep || 1;
+      const pct = Math.round((currentStep / 12) * 100);
+
+      const docList = [
+        { code: "SI", name: "1. Shipping Instruction (SI)", desc: "Instruksi Pelayaran dari Shipper", stepNeeded: 3, status: (currentStep >= 3 || (docs.shippingInstruction && docs.shippingInstruction.status === 'Verified')) },
+        { name: "2. Draft Survey Report", desc: "Verifikasi Bobot Tongkang oleh Surveyor", stepNeeded: 4, status: (currentStep >= 4 || (docs.draftSurvey && docs.draftSurvey.status === 'Verified')) },
+        { name: "3. Surat Keterangan Asal Barang (SKAB)", desc: "Legalitas Asal Bijih Nikel Tambang SSU", stepNeeded: 5, status: (currentStep >= 5 || (docs.skab && docs.skab.status === 'Verified')) },
+        { name: "4. Certificate of Sampling & Analysis (CoA Muat)", desc: "Analisis Kadar Ni/Fe/MC Pelabuhan Muat", stepNeeded: 6, status: (currentStep >= 6 || (docs.coaMuat && docs.coaMuat.status === 'Verified')) },
+        { name: "5. Certificate of Weight (CoW)", desc: "Sertifikat Tonase Akhir Penimbangan", stepNeeded: 7, status: (currentStep >= 7 || (docs.certificateOfWeight && docs.certificateOfWeight.status === 'Verified')) },
+        { name: "6. Cargo Manifest & Bill of Lading (B/L)", desc: "Dokumen Resmi Pengangkutan Laut", stepNeeded: 8, status: (currentStep >= 8 || (docs.billOfLading && docs.billOfLading.status === 'Verified')) },
+        { name: "7. Bukti Bayar PNBP / Royalti Minerba", desc: "Setoran PNBP Kas Negara (Stlh Dokumen Operasional)", stepNeeded: 9, status: (currentStep >= 9 || (docs.pnbp && docs.pnbp.status === 'Verified')) },
+        { name: "8. Laporan Hasil Verifikasi (LHV)", desc: "Rekomendasi Terbit LHV oleh Surveyor Kemen ESDM", stepNeeded: 10, status: (currentStep >= 10 || (docs.lhv && docs.lhv.status === 'Verified')) },
+        { name: "9. CoA Bongkar (Smelter Discharge Assay)", desc: "Hasil Uji Lab Smelter Pelabuhan Bongkar", stepNeeded: 11, status: (currentStep >= 11 || (docs.coaBongkar && docs.coaBongkar.status === 'Verified')) },
+        { name: "10. Surat Kirim Barang (SKB)", desc: "Dokumen Penyerahan Barang ke Buyer/Smelter", stepNeeded: 5, status: (currentStep >= 5 || (docs.suratKirimBarang && docs.suratKirimBarang.status === 'Verified')) }
+      ];
+
+      const stepsList = [
+        "Allocated", "Loading", "SI Issued", "Draft Survey", "SKAB Cert", "CoA Muat",
+        "CoW Cert", "Manifest & B/L", "PNBP Paid", "Terbit LHV", "CoA Bongkar", "Billing Selesai"
+      ];
+
+      const trkNo = shp.trackingNumber || 'TRK-SSU-2026-001';
+
+      openModal(`🔍 Portal Lacak Dokumen Contractor & Pelayaran`, `
+        <div class="space-y-5 text-xs">
+          <!-- Search Header bar -->
+          <div class="p-4 bg-slate-900 text-white rounded-2xl space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">Live Document Tracking Portal</span>
+                <h4 class="text-base font-extrabold text-white">Lacak Posisi Dokumen Tongkang</h4>
+              </div>
+              <div class="flex items-center gap-2">
+                <span onclick="copyTrackingNo('${trkNo}')" class="px-3 py-1.5 bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/30 transition-all">
+                  <i data-lucide="qr-code" class="w-4 h-4 text-amber-400"></i>
+                  <span>${trkNo}</span>
+                  <i data-lucide="copy" class="w-3.5 h-3.5 text-amber-400"></i>
+                </span>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800">
+              <label class="text-[11px] font-semibold text-slate-300 block mb-1">Pilih Tongkang / Masukkan No Resi Tracking:</label>
+              <select onchange="onSelectTrackShipment(this.value)" class="w-full p-2.5 bg-slate-800 border border-slate-700 text-white font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500">
+                ${optionsHtml}
+              </select>
+            </div>
+          </div>
+
+          <!-- Summary info grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-amber-50/60 p-3 rounded-2xl border border-amber-200/80">
+            <div><span class="text-amber-800/70 text-[10px] block font-semibold">Vessel / Tongkang</span><strong class="text-slate-900 text-xs">${shp.bargeName}</strong></div>
+            <div><span class="text-amber-800/70 text-[10px] block font-semibold">Perusahaan Pelayaran</span><strong class="text-slate-900 text-xs">${shp.shippingLine || 'PT Oceanic Lines'}</strong></div>
+            <div><span class="text-amber-800/70 text-[10px] block font-semibold">Tujuan Smelter</span><strong class="text-slate-900 text-xs">${shp.customerName}</strong></div>
+            <div><span class="text-amber-800/70 text-[10px] block font-semibold">Tonase Aktual</span><strong class="text-emerald-700 text-xs">${(shp.actualQuantity || 8000).toLocaleString()} WMT</strong></div>
+          </div>
+
+          <!-- Overall Progress Bar -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-800">Progres Penyelesaian Dokumen Operasional</span>
+              <span class="font-extrabold text-amber-600">${pct}% Complete (Step ${currentStep} / 12)</span>
+            </div>
+            <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+              <div class="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+            </div>
+            <p class="text-[11px] text-slate-500">Status Saat Ini: <strong class="text-slate-900">${stepsList[currentStep - 1] || 'In Progress'}</strong> (${shp.status})</p>
+          </div>
+
+          <!-- Document List Table -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <h5 class="font-bold text-slate-800">Daftar Dokumen Operasional & Status Verifikasi</h5>
+              <span class="text-[11px] text-slate-500 font-medium">Update Terakhir: Real-time Live Sync</span>
+            </div>
+            <div class="divide-y divide-slate-100">
+              ${docList.map(d => `
+                <div class="p-3 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
+                  <div class="space-y-0.5">
+                    <h6 class="font-bold text-slate-900 text-xs">${d.name}</h6>
+                    <p class="text-[11px] text-slate-500">${d.desc}</p>
+                  </div>
+                  <div>
+                    ${d.status ? `
+                      <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                        <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i> VERIFIED / TERBIT
+                      </span>
+                    ` : `
+                      <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 animate-pulse">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-600"></i> PENDING STEP ${d.stepNeeded}
+                      </span>
+                    `}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `, `
+        <button onclick="printSingleBargePDF('${shp.id}')" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5">
+          <i data-lucide="printer" class="w-4 h-4"></i> Cetak Tracking Slip Contractor
+        </button>
+        <button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl">Tutup</button>
+      `);
     }
 
     function saveShipmentStepUpdate(shpId) {
@@ -1152,6 +1362,7 @@
       const year = new Date().getFullYear();
       const nextNum = String(appState.shipments.length + 1).padStart(3, '0');
       const defaultShipmentNo = `SHP/SSU/${year}/${nextNum}`;
+      const defaultTrackingNo = `TRK-SSU-${year}-${nextNum}`;
 
       const firstContract = (appState.contracts && appState.contracts[0]) || {};
 
@@ -1160,6 +1371,11 @@
           <div>
             <label class="font-bold text-slate-700 block mb-1">Shipment Number</label>
             <input type="text" id="shp-number" value="${defaultShipmentNo}" required class="w-full p-2 border border-slate-300 rounded-xl bg-slate-50 font-bold text-brand-600">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Tracking Number (No Resi Contractor)</label>
+            <input type="text" id="shp-tracking-no" value="${defaultTrackingNo}" required class="w-full p-2 border border-amber-300 rounded-xl bg-amber-50 font-bold text-amber-900 font-mono">
           </div>
 
           <div>
@@ -1267,6 +1483,7 @@
 
     function submitShipment() {
       const shpNum = document.getElementById('shp-number').value;
+      const trackingNo = (document.getElementById('shp-tracking-no') && document.getElementById('shp-tracking-no').value) || ("TRK-SSU-" + new Date().getFullYear() + "-" + String(appState.shipments.length + 1).padStart(3, '0'));
       const contractSelect = document.getElementById('shp-contract-id');
       if (!contractSelect || !contractSelect.options[contractSelect.selectedIndex]) {
         alert("Please select a valid sales contract.");
@@ -1301,6 +1518,7 @@
       const newShipment = {
         id: "shp-" + Date.now(),
         shipmentNumber: shpNum,
+        trackingNumber: trackingNo,
         contractId: contractId,
         contractNumber: contractNum,
         customerId: customerId,
@@ -2240,7 +2458,7 @@
         box.classList.remove('scale-95', 'opacity-0');
         box.classList.add('scale-100', 'opacity-100');
       }, 10);
-      lucide.createIcons();
+      safeLucideCreateIcons();
     }
 
     function closeModal() {
@@ -2255,7 +2473,7 @@
       document.getElementById('doc-preview-title').innerText = title;
       document.getElementById('doc-preview-body').innerHTML = `<p class="text-xs">${details}</p>`;
       document.getElementById('doc-preview-backdrop').classList.remove('hidden');
-      lucide.createIcons();
+      safeLucideCreateIcons();
     }
 
     function closeDocPreview() {
@@ -2338,6 +2556,27 @@
         schemaSQL: `-- SUPABASE DDL\nCREATE TABLE contracts (...);`
       };
     }
+
+    /* AUTOMATIC IMMEDIATE APPLICATION INITIALIZATION */
+    function initApp() {
+      try { renderSidebar(); } catch(e) { console.error("renderSidebar error:", e); }
+      try { setupEventListeners(); } catch(e) { console.error("setupEventListeners error:", e); }
+      try { loadAppData(); } catch(e) { console.error("loadAppData error:", e); }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+
+    // Fail-safe: ensure loader is hidden within 1.5s in all cases
+    setTimeout(() => {
+      hideSyncLoader();
+      if (!appState.dataLoadedSuccessfully) {
+        onDataLoaded(getFallbackMockData());
+      }
+    }, 1500);
   </script>
 </body>
 </html>
